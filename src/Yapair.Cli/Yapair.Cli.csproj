@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Yapair.Core\Yapair.Core.csproj" />
     <ProjectReference Include="..\Yapair.Discovery.Windows\Yapair.Discovery.Windows.csproj" />
+    <ProjectReference Include="..\Yapair.Storage\Yapair.Storage.csproj" />
   </ItemGroup>
 
 </Project>

@@ -29,6 +29,9 @@ internal static class CliParser
                         case "verify":
                             command = CliCommand.Verify;
                             break;
+                        case "cases":
+                            command = CliCommand.Cases;
+                            break;
                         case "playbooks":
                             command = CliCommand.Playbooks;
                             break;
@@ -44,6 +47,10 @@ internal static class CliParser
                         default:
                             return Failure($"Bilinmeyen komut: {argument}");
                     }
+                }
+                else if (command == CliCommand.Cases && string.IsNullOrWhiteSpace(options.CasesAction))
+                {
+                    options.CasesAction = argument.ToLowerInvariant();
                 }
                 else
                 {
@@ -224,6 +231,80 @@ internal static class CliParser
 
                     options.MaxAttempts = attempts;
                     break;
+                case "--db":
+                    if (!TryTakeValue(args, ref index, inlineValue, name, out var db, out var dbError))
+                    {
+                        return Failure(dbError!);
+                    }
+
+                    options.DatabasePath = db;
+                    break;
+                case "--text":
+                    if (!TryTakeValue(args, ref index, inlineValue, name, out var text, out var textError))
+                    {
+                        return Failure(textError!);
+                    }
+
+                    options.Text = text;
+                    break;
+                case "--file":
+                    if (!TryTakeValue(args, ref index, inlineValue, name, out var file, out var fileError))
+                    {
+                        return Failure(fileError!);
+                    }
+
+                    options.ImportFile = file;
+                    break;
+                case "--store-raw":
+                    if (inlineValue is not null)
+                    {
+                        return Failure("--store-raw değer almaz.");
+                    }
+
+                    options.StoreRaw = true;
+                    break;
+                case "--limit":
+                    if (!TryTakeInt(args, ref index, inlineValue, name, out var limit, out var limitError))
+                    {
+                        return Failure(limitError!);
+                    }
+
+                    if (limit is < 1 or > 1000)
+                    {
+                        return Failure("--limit 1 ile 1000 arasında olmalıdır.");
+                    }
+
+                    options.CaseLimit = limit;
+                    break;
+                case "--threshold":
+                    if (!TryTakeDouble(args, ref index, inlineValue, name, out var threshold, out var thresholdError))
+                    {
+                        return Failure(thresholdError!);
+                    }
+
+                    if (threshold is < 0.1 or > 0.9)
+                    {
+                        return Failure("--threshold 0.1 ile 0.9 arasında olmalıdır.");
+                    }
+
+                    options.ClusterThreshold = threshold;
+                    break;
+                case "--outcome":
+                    if (!TryTakeValue(args, ref index, inlineValue, name, out var outcome, out var outcomeError))
+                    {
+                        return Failure(outcomeError!);
+                    }
+
+                    options.Outcome = outcome;
+                    break;
+                case "--case":
+                    if (!TryTakeValue(args, ref index, inlineValue, name, out var caseId, out var caseError))
+                    {
+                        return Failure(caseError!);
+                    }
+
+                    options.CaseId = caseId;
+                    break;
                 default:
                     return Failure($"Bilinmeyen seçenek: {name}");
             }
@@ -274,6 +355,29 @@ internal static class CliParser
 
         value = args[++index];
         error = null;
+        return true;
+    }
+
+    private static bool TryTakeDouble(
+        string[] args,
+        ref int index,
+        string? inlineValue,
+        string option,
+        out double value,
+        out string? error)
+    {
+        if (!TryTakeValue(args, ref index, inlineValue, option, out var text, out error))
+        {
+            value = 0;
+            return false;
+        }
+
+        if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+        {
+            error = $"{option} sayısal bir değer almalıdır.";
+            return false;
+        }
+
         return true;
     }
 

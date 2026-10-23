@@ -4,6 +4,7 @@ internal enum CliCommand
 {
     Discover,
     Verify,
+    Cases,
     Playbooks,
     Schema,
     Version,
@@ -30,6 +31,16 @@ internal sealed class CliOptions
     public string? PrinterName { get; set; }
     public bool Ask { get; set; }
     public int MaxAttempts { get; set; } = 2;
+
+    public string? CasesAction { get; set; }
+    public string? DatabasePath { get; set; }
+    public string? Text { get; set; }
+    public string? ImportFile { get; set; }
+    public bool StoreRaw { get; set; }
+    public int CaseLimit { get; set; } = 100;
+    public double ClusterThreshold { get; set; } = 0.35;
+    public string? Outcome { get; set; }
+    public string? CaseId { get; set; }
 }
 
 internal sealed record CliParseResult(CliCommand Command, CliOptions Options, string? Error);

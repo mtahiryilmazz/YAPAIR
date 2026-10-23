@@ -5,6 +5,7 @@ using Yapair.Core.Playbooks;
 using Yapair.Core.Serialization;
 using Yapair.Core.Verification;
 using Yapair.Discovery.Windows;
+using Yapair.Storage;
 
 namespace Yapair.Cli;
 
@@ -45,6 +46,8 @@ public static class CliApplication
                 return 0;
             case CliCommand.Discover:
                 return await RunDiscoverAsync(parsed.Options, stdout, stderr, cancellationToken).ConfigureAwait(false);
+            case CliCommand.Cases:
+                return await RunCasesAsync(parsed.Options, stdout, stderr, cancellationToken).ConfigureAwait(false);
             case CliCommand.Playbooks:
                 return RunPlaybooks(parsed.Options, stdout);
             case CliCommand.Verify:
@@ -180,6 +183,234 @@ public static class CliApplication
             log?.Write("error", "unexpected_error");
             stderr.WriteLine("Beklenmeyen bir iç hata oluştu; rapor üretilemedi.");
             return 4;
+        }
+    }
+
+    private static async Task<int> RunCasesAsync(
+        CliOptions options,
+        TextWriter stdout,
+        TextWriter stderr,
+        CancellationToken cancellationToken)
+    {
+        var action = string.IsNullOrWhiteSpace(options.CasesAction) ? "help" : options.CasesAction;
+        if (action is "help" or "-h" or "--help")
+        {
+            stdout.WriteLine(CliHelp.CasesText);
+            return 0;
+        }
+
+        var store = new CaseStore(options.DatabasePath);
+        store.Initialize();
+
+        var machine = new WindowsMachineIdentityProvider().GetIdentity(TimeSpan.FromSeconds(3));
+
+        switch (action)
+        {
+            case "add":
+                if (string.IsNullOrWhiteSpace(options.Text))
+                {
+                    stderr.WriteLine("Hata: cases add için --text <metin> zorunludur.");
+                    return 64;
+                }
+
+                var added = store.AddCase(options.Text, options.StoreRaw, machine: machine);
+                if (options.Format == "json")
+                {
+                    stdout.WriteLine(CaseJson.Serialize(added, options.Pretty));
+                }
+                else
+                {
+                    WriteCaseAdded(added, options.StoreRaw, store.DatabasePath, machine, stdout);
+                }
+
+                return 0;
+
+            case "list":
+                var cases = store.GetCases(options.CaseLimit);
+                if (options.Format == "json")
+                {
+                    stdout.WriteLine(CaseJson.Serialize(cases, options.Pretty));
+                }
+                else
+                {
+                    WriteCaseList(cases, stdout);
+                }
+
+                return 0;
+
+            case "import":
+                if (string.IsNullOrWhiteSpace(options.ImportFile))
+                {
+                    stderr.WriteLine("Hata: cases import için --file <jsonl> zorunludur.");
+                    return 64;
+                }
+
+                if (!File.Exists(options.ImportFile))
+                {
+                    stderr.WriteLine($"Hata: dosya bulunamadı: {Path.GetFileName(options.ImportFile)}");
+                    return 4;
+                }
+
+                var imported = 0;
+                var invalid = 0;
+                foreach (var line in await File.ReadAllLinesAsync(options.ImportFile, cancellationToken).ConfigureAwait(false))
+                {
+                    if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith('#'))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        using var document = JsonDocument.Parse(line);
+                        if (!document.RootElement.TryGetProperty("text", out var textElement)
+                            || textElement.GetString() is not { Length: > 0 } text)
+                        {
+                            invalid++;
+                            continue;
+                        }
+
+                        store.AddCase(text, options.StoreRaw, machine: machine);
+                        imported++;
+                    }
+                    catch (JsonException)
+                    {
+                        invalid++;
+                    }
+                }
+
+                if (options.Format == "json")
+                {
+                    stdout.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        imported,
+                        invalid,
+                        database = store.DatabasePath,
+                        raw_text_stored = options.StoreRaw,
+                    }, options.Pretty ? SnapshotJson.IndentedOptions : SnapshotJson.Options));
+                }
+                else
+                {
+                    stdout.WriteLine($"İçe aktarılan vaka: {imported}; geçersiz satır: {invalid}");
+                    stdout.WriteLine($"Veritabanı: {store.DatabasePath}");
+                    if (!options.StoreRaw)
+                    {
+                        stdout.WriteLine("Ham metin saklanmadı (gerekirse --store-raw).");
+                    }
+                }
+
+                return invalid == 0 ? 0 : 2;
+
+            case "cluster":
+                var all = store.GetAllCases();
+                var report = CaseClusterer.Cluster(all, options.ClusterThreshold);
+                if (options.Format == "json")
+                {
+                    stdout.WriteLine(CaseJson.Serialize(report, options.Pretty));
+                }
+                else
+                {
+                    WriteClusters(report, stdout);
+                }
+
+                return 0;
+
+            case "outcome":
+                if (string.IsNullOrWhiteSpace(options.CaseId) || string.IsNullOrWhiteSpace(options.Outcome))
+                {
+                    stderr.WriteLine("Hata: cases outcome için --case <id> ve --outcome <durum> zorunludur.");
+                    return 64;
+                }
+
+                var normalizedOutcome = options.Outcome.Trim().ToLowerInvariant().Replace('-', '_');
+                if (normalizedOutcome is not ("resolved" or "not_resolved" or "unknown" or "contradicted"))
+                {
+                    stderr.WriteLine("Hata: --outcome resolved, not_resolved, unknown veya contradicted olmalıdır.");
+                    return 64;
+                }
+
+                var updated = store.SetOutcome(options.CaseId, normalizedOutcome);
+                if (options.Format == "json")
+                {
+                    stdout.WriteLine(JsonSerializer.Serialize(new
+                    {
+                        case_id = options.CaseId,
+                        outcome = normalizedOutcome,
+                        updated,
+                    }, options.Pretty ? SnapshotJson.IndentedOptions : SnapshotJson.Options));
+                }
+                else
+                {
+                    stdout.WriteLine(updated
+                        ? $"{options.CaseId} sonucu güncellendi: {normalizedOutcome}"
+                        : $"{options.CaseId} bulunamadı.");
+                }
+
+                return updated ? 0 : 2;
+
+            default:
+                stderr.WriteLine($"Hata: bilinmeyen cases eylemi: {action}");
+                stderr.WriteLine(CliHelp.CasesText);
+                return 64;
+        }
+    }
+
+    private static void WriteCaseAdded(
+        CaseRecord record,
+        bool rawStored,
+        string databasePath,
+        MachineIdentity machine,
+        TextWriter stdout)
+    {
+        stdout.WriteLine($"Vaka eklendi: {record.CaseId}");
+        stdout.WriteLine($"  Aile     : {record.IssueFamily}");
+        stdout.WriteLine($"  Semptom  : {record.SymptomCode} — {record.SymptomLabel}");
+        stdout.WriteLine($"  Normalize: {record.NormalizedText}");
+        stdout.WriteLine($"  Makine   : {machine.Label} ({machine.ShortKey})");
+        stdout.WriteLine(rawStored ? "  Ham metin: saklandı" : "  Ham metin: saklanmadı (--store-raw)");
+        stdout.WriteLine($"  Veritabanı: {databasePath}");
+    }
+
+    private static void WriteCaseList(IReadOnlyList<CaseRecord> cases, TextWriter stdout)
+    {
+        if (cases.Count == 0)
+        {
+            stdout.WriteLine("Vaka bulunamadı.");
+            return;
+        }
+
+        stdout.WriteLine($"Son {cases.Count} vaka:");
+        foreach (var item in cases)
+        {
+            stdout.WriteLine($"{item.CaseId} | {item.CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm} | {item.IssueFamily}/{item.SymptomCode} | {item.SymptomLabel}");
+            stdout.WriteLine($"  {item.RawText ?? item.NormalizedText}");
+        }
+    }
+
+    private static void WriteClusters(CaseClusterReport report, TextWriter stdout)
+    {
+        stdout.WriteLine($"YAPAIR Vaka Kümesi ({report.CaseCount} vaka, eşik {report.Threshold:0.00})");
+        stdout.WriteLine();
+        if (report.Clusters.Count == 0)
+        {
+            stdout.WriteLine("Vaka bulunamadı.");
+            return;
+        }
+
+        foreach (var cluster in report.Clusters)
+        {
+            stdout.WriteLine($"{cluster.Label} ({cluster.Family}): {cluster.Count} vaka");
+            foreach (var subcluster in cluster.Subclusters)
+            {
+                stdout.WriteLine($"  - {subcluster.Code}: {subcluster.Count} — {subcluster.Label}");
+            }
+
+            foreach (var sample in cluster.SampleTexts)
+            {
+                stdout.WriteLine($"    örnek: {sample}");
+            }
+
+            stdout.WriteLine();
         }
     }
 

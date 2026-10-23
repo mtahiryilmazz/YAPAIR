@@ -19,6 +19,11 @@ out/
 *.snapshot.json
 *.snapshot.log.jsonl
 
+## Local case database
+*.db
+*.db-wal
+*.db-shm
+
 ## OS noise
 Thumbs.db
 .DS_Store

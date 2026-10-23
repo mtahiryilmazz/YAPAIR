@@ -6,7 +6,7 @@
 
 YAPAIR; Windows'ta yazıcıdan sese, ağdan Windows Update'e, UAC/grup ilkesinden aygıt sürücülerine kadar geniş bir sorun yelpazesini yerel kanıtlarla teşhis eden, riski açıklayan ve yalnızca onaylanan sınırlı onarımları çalıştıran bir masaüstü ajanıdır.
 
-> **Durum:** Sprint 1/2 — çok alanlı **salt okunur tanılama**, deterministik bulgular, playbook kataloğu ve **çözüm doğrulama döngüsü** uygulandı. Onarım yürütücüsü, LLM triajı ve Web RAG henüz yoktur. Ayrıntılar için [ARCHITECTURE.md](ARCHITECTURE.md) ve [docs/verification-loop.md](docs/verification-loop.md).
+> **Durum:** Sprint 1/2 — çok alanlı **salt okunur tanılama**, deterministik bulgular, playbook kataloğu, **çözüm doğrulama döngüsü** ve yerel **vaka veritabanı/kümeleme POC’u** uygulandı. Onarım yürütücüsü, sürücü kurulumu, merkezî Supabase senkronizasyonu, LLM triajı ve Web RAG henüz yoktur. Ayrıntılar: [ARCHITECTURE.md](ARCHITECTURE.md), [docs/verification-loop.md](docs/verification-loop.md), [docs/case-database.md](docs/case-database.md), [docs/driver-management.md](docs/driver-management.md).
 
 ## Neden yalnızca yazıcı değil?
 
@@ -48,6 +48,10 @@ dotnet run --project src/Yapair.Cli -- verify --baseline out/rapor.json --ask
 
 # Onarım playbook kataloğu (salt okunur; hiçbir playbook çalıştırılmaz)
 dotnet run --project src/Yapair.Cli -- playbooks --format summary
+
+# Vaka veritabanı POC'u: farklı cümleleri normalize et, aile/alt tür olarak grupla
+dotnet run --project src/Yapair.Cli -- cases import --file data/sample-complaints.jsonl
+dotnet run --project src/Yapair.Cli -- cases cluster --format summary
 ```
 
 Derlenmiş CLI:
@@ -118,6 +122,41 @@ Kullanıcının istediği akış uygulandı:
 
 CLI karşılığı: `yapair verify --baseline <json> --ask`. Arayüzde aynı akış `IVerificationPrompt` arayüzünü uygulayan butonlarla çalışır. Ayrıntılar: [docs/verification-loop.md](docs/verification-loop.md).
 
+## Vaka veritabanı ve kümeleme
+
+Yerel SQLite POC'u, farklı cümlelerle anlatılan benzer sorunları gruplar:
+
+- `machine_label` = bilgisayar adı (destek için etiket)
+- `machine_key` = SMBIOS UUID/BIOS serial'ın SHA-256 özeti; **ham HWID saklanmaz**
+- Ham kullanıcı metni varsayılan olarak saklanmaz; `--store-raw` açık rıza
+- Bilinmeyen metinler token benzerliğiyle gruplanır
+
+```powershell
+yapair cases add --text "Yazıcı çevrimdışı"
+yapair cases import --file data\sample-complaints.jsonl
+yapair cases cluster --format summary
+```
+
+Örnek: beş farklı yazıcı ifadesi tek “Yazıcı sorunları” ailesinde, `printer_offline`, `printer_output_failure`, `printer_not_visible` alt türlerinde toplanır.
+
+**Merkezî hedef (planlanan):** 100 PC → yerel outbox → ASP.NET Core API → Supabase PostgreSQL → destek paneli. Ayrıntılar: [docs/case-database.md](docs/case-database.md).
+
+## Sürücü yönetimi (planlanan)
+
+Cihaz kimliğinden sürücü kurulumu **winget/choco/NuGet ile değil**, şu zincirle yapılmalıdır:
+
+```text
+HardwareID/VID&PID → resmî kaynak → imza/hash/model doğrulama
+→ R2 onay → pnputil /add-driver → post-check → rollback
+```
+
+- `winget`: uygulama paketleri için opsiyonel; sürücü için güvenilir değil.
+- `choco`: topluluk paketleri; kurumsal ortamda varsayılan kapalı.
+- `nuget`: .NET kütüphanesi; sürücü değil.
+- LLM `inf_path`/URL veremez; yalnızca katalog `driver_id`.
+
+Ayrıntılar: [docs/driver-management.md](docs/driver-management.md).
+
 ## Güvenlik ilkeleri
 
 - Önce kanıt, sonra teşhis, en son eylem.
@@ -169,13 +208,15 @@ Windows'un WMI/CIM, Event Log, ServiceController, PnP, yazdırma ve registry API
 yapair/
 ├── src/
 │   ├── Yapair.Core/                 # sözleşmeler, bulgular, redaksiyon, şema, doğrulama, playbook kataloğu
-│   ├── Yapair.Discovery.Windows/    # salt okunur Windows adaptörleri + IPP
-│   └── Yapair.Cli/                  # discover / verify / playbooks / schema
+│   ├── Yapair.Discovery.Windows/    # salt okunur Windows adaptörleri + IPP + makine kimliği
+│   ├── Yapair.Storage/              # SQLite vaka deposu, normalizasyon, kümeleme
+│   └── Yapair.Cli/                  # discover / verify / cases / playbooks / schema
 ├── tests/
 │   ├── Yapair.Core.Tests/
 │   ├── Yapair.Discovery.Windows.Tests/
 │   ├── Yapair.Cli.Tests/
 │   └── Yapair.TestSupport/
+├── data/sample-complaints.jsonl
 ├── schemas/system-snapshot.v1.schema.json
 ├── docs/
 ├── ARCHITECTURE.md
@@ -185,10 +226,11 @@ yapair/
 
 ## Yol haritası
 
-- **Tamamlandı (Sprint 1/2):** çok alanlı salt okunur tanılama, deterministik bulgular, şema, redaksiyon, IPP, doğrulama döngüsü, playbook kataloğu, testler.
-- **Sıradaki:** onaylı onarım yürütücüsü (R1/R2), audit kaydı, geri alma, Windows servis/IPC katmanı.
+- **Tamamlandı (Sprint 1/2):** çok alanlı salt okunur tanılama, deterministik bulgular, şema, redaksiyon, IPP, doğrulama döngüsü, playbook kataloğu, yerel vaka veritabanı + kümeleme, makine kimliği, testler.
+- **Sıradaki:** yerel outbox + Supabase/PostgreSQL + ASP.NET Core sync API; merkezî destek paneli.
+- **Sonra:** onaylı onarım yürütücüsü (R1/R2), audit kaydı, geri alma, Windows servis/IPC katmanı.
 - **Sonra:** WinUI 3 arayüzü, onay kartları ve “Sorun çözüldü mü?” butonları, vaka geçmişi.
-- **Sonra:** yerel/bulut LLM triajı, resmî kaynaklı RAG, sürücü kataloğu.
+- **Sonra:** sürücü kataloğu + imza doğrulama + `pnputil`; LLM triajı ve resmî kaynaklı RAG.
 - **Genişleme:** grup ilkesi sonuç kümesi, Denetim Masası ayarları, ses uç noktaları, ağ tanılama, güvenlik açıkları, performans.
 
 ## Bilinen sınırlamalar

@@ -162,7 +162,7 @@ Kurallar:
 - Her playbook için pozitif, negatif, iptal ve kısmi başarısızlık testi gerekir.
 - Playbook, test edilmiş post-check olmadan “tamamlandı” sayılmaz.
 
-Mevcut katalog: `Yapair.Core.Playbooks.PlaybookCatalog` (16 kayıt; hiçbiri çalıştırılmaz).
+Mevcut katalog: `Yapair.Core.Playbooks.PlaybookCatalog` (19 kayıt; hiçbiri çalıştırılmaz). IP değişikliği R2, izinli uygulama açma R1, katalog sürücü kurulumu R2 olarak tanımlıdır.
 
 ## 7. Doğrulama döngüsü
 
@@ -224,10 +224,14 @@ RAG ilk sürümde kapalıdır. Açıldığında içerik ayrı araştırma bileş
 | IPP 1.1 (HTTP → HTTPS yönlendirme, isteğe bağlı self-signed) | Uygulandı, canlı test edildi |
 | Doğrulama döngüsü + CLI onayı | Uygulandı |
 | Playbook kataloğu | Uygulandı (tanım) |
+| Yerel vaka veritabanı + normalizasyon + kümeleme | Uygulandı (POC) |
+| Makine kimliği (bilgisayar adı + hash HWID) | Uygulandı |
+| Merkezî Supabase/PostgreSQL + sync | Planlandı |
 | Onarım yürütücüsü / IPC / audit DB | Henüz yok |
 | WinUI 3 arayüzü | Henüz yok |
 | LLM / RAG | Henüz yok |
-| Grup ilkesi RSoP, Denetim Masası, sürücü kataloğu | Yol haritası |
+| Sürücü kataloğu + imza doğrulama + `pnputil` | Planlandı (R2) |
+| Grup ilkesi RSoP, Denetim Masası | Yol haritası |
 
 ## 10. Test ve kabul
 

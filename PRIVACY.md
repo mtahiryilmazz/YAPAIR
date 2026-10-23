@@ -19,7 +19,19 @@ YAPAIR, tanılama için gereken en az veriyi toplar. Varsayılan çıktı, kulla
 | Depolama | Sürücü harfi, boş/toplam alan | Tutulur |
 | IPP | Cihaz durumu, nedenler, model | URI'deki IP maskelenir |
 
-**Toplanmayanlar:** bilgisayar adı, kullanıcı adı, alan adı, belge içeriği, yazdırma işi sahibi, MAC adresi, seri numarası, parola, API anahtarı, erişim token'ı.
+**Toplanmayanlar:** kullanıcı adı, alan adı, belge içeriği, yazdırma işi sahibi, MAC adresi, ham seri numarası/HWID, parola, API anahtarı, erişim token'ı.
+
+## Vaka veritabanı ve makine kimliği
+
+Yerel vaka veritabanı (`cases.db`) kullanıldığında:
+
+- `machine_label`: bilgisayar adı (destek ekibi için okunabilir etiket).
+- `machine_key`: SMBIOS UUID/BIOS serial'ın SHA-256 özeti; ham HWID/serial **saklanmaz**.
+- `installation_id` gerekmez; hash, farklı PC'leri ayırt etmeye yarar.
+- Ham kullanıcı metni varsayılan olarak saklanmaz; `--store-raw` açık rıza gerektirir.
+- Makine etiketi + hash pseudonymous veridir; KVKK/GDPR kapsamında kişisel veri olarak değerlendirilmelidir.
+- Merkezî Supabase senkronizasyonu eklendiğinde yalnızca anonimleştirilmiş alanlar gönderilir; `machine_label` yalnızca yetkili destek rolüne gösterilir.
+- Saklama süresi ve silme politikası kurum tarafından belirlenir; varsayılan öneri 90 gündür.
 
 ## Redaksiyon
 

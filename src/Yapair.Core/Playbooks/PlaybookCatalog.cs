@@ -254,5 +254,81 @@ public static class PlaybookCatalog
             PostChecks = ["İlgili olaylar listelenir"],
             Rollback = "Değişiklik yok.",
         },
+        new RepairPlaybook
+        {
+            Id = "network.ip.change.v1",
+            Title = "Ağ bağdaştırıcısı IP yapılandırmasını değiştir",
+            Domain = Contracts.HealthDomain.Network,
+            Risk = PlaybookRisk.R2,
+            RequiresApproval = true,
+            Summary = "Seçili bağdaştırıcının IPv4 adresini, alt ağ maskesini, gateway'ini ve DNS'ini değiştirir. Bağlantı kesintisi olabilir; eski yapılandırma önce kaydedilir.",
+            Steps = ["network.inspect_config", "network.apply_ip_config", "network.verify_config"],
+            Preconditions =
+            [
+                "Yönetici yetkisi",
+                "Eski IP/gateway/DNS kaydedildi",
+                "Hedef IP, alt ağ ve gateway doğrulandı",
+                "Kurumsal ağ politikasıyla çelişmiyor",
+                "Kullanıcı bağlantı kesintisini onayladı",
+            ],
+            PostChecks =
+            [
+                "NetworkInterface yapılandırması hedef IP ile eşleşiyor",
+                "Varsayılan gateway ve DNS tanımlı",
+                "Yerel ağ bağlantısı doğrulandı",
+            ],
+            Rollback = "Önceki IPv4 yapılandırması geri yüklenir; uzak oturum kopmuşsa yerel müdahale gerekebilir.",
+        },
+        new RepairPlaybook
+        {
+            Id = "apps.launch.allowlisted.v1",
+            Title = "İzinli uygulamayı aç",
+            Domain = Contracts.HealthDomain.System,
+            Risk = PlaybookRisk.R1,
+            RequiresApproval = true,
+            Summary = "Allowlist'teki veya kullanıcının açıkça seçtiği uygulamayı argümansız başlatır. Keyfî dosya yolu veya shell komutu kabul etmez.",
+            Steps = ["apps.resolve_allowlisted", "apps.launch"],
+            Preconditions =
+            [
+                "Uygulama allowlist içinde veya kullanıcı tarafından seçilmiş",
+                "Yol imzalı/beklenen yayıncıya ait",
+                "Kullanıcı onayı",
+            ],
+            PostChecks = ["Süreç başladı", "Uygulama pencere/yanıt durumu kontrol edildi"],
+            Rollback = "Uygulama kullanıcı tarafından kapatılır; zorla sonlandırma ayrı onay gerektirir.",
+        },
+        new RepairPlaybook
+        {
+            Id = "devices.driver.install.v1",
+            Title = "Katalogdan imzalı sürücü kur",
+            Domain = Contracts.HealthDomain.Devices,
+            Risk = PlaybookRisk.R2,
+            RequiresApproval = true,
+            Summary = "PnP donanım kimliğini resmî katalogdaki driver_id ile eşleştirir; imza, yayıncı, hash, model, mimari ve Windows sürümünü doğruladıktan sonra pnputil ile kurar.",
+            Steps =
+            [
+                "devices.inspect_hardware_ids",
+                "drivers.resolve_catalog",
+                "drivers.verify_signature",
+                "drivers.install_pnputil",
+                "devices.verify_pnp_state",
+            ],
+            Preconditions =
+            [
+                "Yönetici yetkisi",
+                "Donanım kimliği yerel keşiften geldi",
+                "Sürücü resmî allowlist kaynağında",
+                "Authenticode imzası ve yayıncı doğrulandı",
+                "Model/mimari/Windows sürümü eşleşiyor",
+                "Kullanıcı onayı",
+            ],
+            PostChecks =
+            [
+                "ConfigManagerErrorCode = 0",
+                "PnP durumu OK",
+                "Cihaz işlevi/çıktısı doğrulandı",
+            ],
+            Rollback = "Önceki sürücü paketi/bağlantısı kaydedilir; kernel sürücüsünde tam geri alma garanti değildir.",
+        },
     ];
 }
