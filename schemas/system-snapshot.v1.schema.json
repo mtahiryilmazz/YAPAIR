@@ -1,0 +1,991 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yapair.local/schemas/system-snapshot.v1.schema.json",
+  "title": "YAPAIR System Snapshot v1",
+  "description": "Read-only Windows diagnostic snapshot produced by the YAPAIR CLI. Sensitive fields are redacted by default; see the privacy section.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "snapshot_id",
+    "collected_at",
+    "status",
+    "os",
+    "spooler",
+    "printers",
+    "print_jobs",
+    "ports",
+    "drivers",
+    "pnp_devices",
+    "event_logs",
+    "ipp_checks",
+    "findings",
+    "domains_checked",
+    "evidence",
+    "sources",
+    "privacy",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "snapshot_id": {
+      "type": "string",
+      "pattern": "^snap-[0-9a-f]{12}$"
+    },
+    "collected_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "$ref": "#/$defs/snapshot_status"
+    },
+    "os": {
+      "$ref": "#/$defs/os_info"
+    },
+    "spooler": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/service_info"
+        }
+      ]
+    },
+    "printers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/printer_info"
+      }
+    },
+    "print_jobs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/print_job"
+      }
+    },
+    "ports": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/port_info"
+      }
+    },
+    "drivers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/driver_info"
+      }
+    },
+    "pnp_devices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/pnp_device"
+      }
+    },
+    "event_logs": {
+      "$ref": "#/$defs/event_logs"
+    },
+    "ipp_checks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ipp_check"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    },
+    "domains_checked": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/health_domain"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/evidence_fact"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source_result"
+      }
+    },
+    "privacy": {
+      "$ref": "#/$defs/privacy_report"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "snapshot_status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "partial",
+        "failed"
+      ]
+    },
+    "source_status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "partial",
+        "unknown",
+        "failed",
+        "disabled"
+      ]
+    },
+    "evidence_quality": {
+      "type": "string",
+      "enum": [
+        "direct",
+        "indirect",
+        "stale",
+        "unknown"
+      ]
+    },
+    "os_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "platform",
+        "product_name",
+        "display_version",
+        "build",
+        "architecture",
+        "is_64_bit",
+        "is_elevated",
+        "is_domain_joined"
+      ],
+      "properties": {
+        "platform": {
+          "const": "windows"
+        },
+        "product_name": {
+          "type": "string"
+        },
+        "display_version": {
+          "type": "string"
+        },
+        "build": {
+          "type": "string"
+        },
+        "architecture": {
+          "type": "string"
+        },
+        "is_64_bit": {
+          "type": "boolean"
+        },
+        "is_elevated": {
+          "type": "boolean"
+        },
+        "is_domain_joined": {
+          "type": "boolean"
+        }
+      }
+    },
+    "service_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "display_name",
+        "status",
+        "start_type",
+        "process_id"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "start_type": {
+          "type": "string"
+        },
+        "process_id": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "printer_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "driver_name",
+        "port_name",
+        "is_default",
+        "is_shared",
+        "is_network",
+        "is_local",
+        "work_offline",
+        "status_code",
+        "status",
+        "detected_error_state",
+        "error_state",
+        "extended_status",
+        "queued_job_count",
+        "queue_observed"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "driver_name": {
+          "type": "string"
+        },
+        "port_name": {
+          "type": "string"
+        },
+        "is_default": {
+          "type": "boolean"
+        },
+        "is_shared": {
+          "type": "boolean"
+        },
+        "is_network": {
+          "type": "boolean"
+        },
+        "is_local": {
+          "type": "boolean"
+        },
+        "work_offline": {
+          "type": "boolean"
+        },
+        "status_code": {
+          "type": "integer"
+        },
+        "status": {
+          "type": "string"
+        },
+        "detected_error_state": {
+          "type": "integer"
+        },
+        "error_state": {
+          "type": "string"
+        },
+        "extended_status": {
+          "type": "integer"
+        },
+        "queued_job_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "queue_observed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "print_job": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "printer_name",
+        "job_id",
+        "document",
+        "status",
+        "status_mask",
+        "status_flags",
+        "total_pages",
+        "pages_printed",
+        "size_bytes",
+        "submitted_at",
+        "age_minutes"
+      ],
+      "properties": {
+        "printer_name": {
+          "type": "string"
+        },
+        "job_id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "document": {
+          "type": "string",
+          "description": "Document name; redacted by default."
+        },
+        "status": {
+          "type": "string"
+        },
+        "status_mask": {
+          "type": "integer"
+        },
+        "status_flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "total_pages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pages_printed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "submitted_at": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "age_minutes": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "port_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "protocol",
+        "host",
+        "port_number",
+        "snmp_enabled",
+        "source"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string",
+          "enum": [
+            "tcp_ip",
+            "wsd",
+            "usb",
+            "local",
+            "unknown"
+          ]
+        },
+        "host": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "port_number": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snmp_enabled": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "registry",
+            "wmi",
+            "combined"
+          ]
+        }
+      }
+    },
+    "driver_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version",
+        "platform",
+        "inf_name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "inf_name": {
+          "type": "string"
+        }
+      }
+    },
+    "pnp_device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "friendly_name",
+        "class",
+        "device_id",
+        "hardware_ids",
+        "status",
+        "config_manager_error_code",
+        "error_meaning",
+        "manufacturer",
+        "service"
+      ],
+      "properties": {
+        "friendly_name": {
+          "type": "string"
+        },
+        "class": {
+          "type": "string"
+        },
+        "device_id": {
+          "type": "string",
+          "description": "Bus and hardware identity only; the unique instance suffix is removed."
+        },
+        "hardware_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string"
+        },
+        "config_manager_error_code": {
+          "type": "integer"
+        },
+        "error_meaning": {
+          "type": "string"
+        },
+        "manufacturer": {
+          "type": "string"
+        },
+        "service": {
+          "type": "string"
+        }
+      }
+    },
+    "event_logs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lookback_hours",
+        "logs",
+        "records"
+      ],
+      "properties": {
+        "lookback_hours": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "logs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event_log_info"
+          }
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event_record"
+          }
+        }
+      }
+    },
+    "event_log_info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "status",
+        "error_code",
+        "message",
+        "events_read"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/source_status"
+        },
+        "error_code": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "message": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "events_read": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "event_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "log_name",
+        "event_id",
+        "level_code",
+        "level",
+        "provider",
+        "time_created",
+        "message"
+      ],
+      "properties": {
+        "log_name": {
+          "type": "string"
+        },
+        "event_id": {
+          "type": "integer"
+        },
+        "level_code": {
+          "type": "integer"
+        },
+        "level": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "time_created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "ipp_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "printer_name",
+        "uri",
+        "status",
+        "http_status",
+        "ipp_status",
+        "ipp_status_name",
+        "message",
+        "reported_printer_name",
+        "printer_state",
+        "printer_state_text",
+        "printer_state_reasons",
+        "accepting_jobs",
+        "queued_job_count",
+        "make_and_model",
+        "duration_ms"
+      ],
+      "properties": {
+        "printer_name": {
+          "type": "string"
+        },
+        "uri": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/source_status"
+        },
+        "http_status": {
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ipp_status": {
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ipp_status_name": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "message": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reported_printer_name": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "printer_state": {
+          "oneOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "printer_state_text": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "printer_state_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "accepting_jobs": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "queued_job_count": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "make_and_model": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "health_domain": {
+      "type": "string",
+      "enum": [
+        "system",
+        "services",
+        "devices",
+        "printers",
+        "audio",
+        "network",
+        "security",
+        "storage",
+        "windows_update"
+      ]
+    },
+    "finding_severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "error",
+        "critical"
+      ]
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "code",
+        "domain",
+        "severity",
+        "subject",
+        "summary",
+        "evidence",
+        "playbook_id"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "domain": {
+          "$ref": "#/$defs/health_domain"
+        },
+        "severity": {
+          "$ref": "#/$defs/finding_severity"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "playbook_id": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "evidence_fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "fact",
+        "value",
+        "subject",
+        "observed_at",
+        "quality"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "fact": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "subject": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "quality": {
+          "$ref": "#/$defs/evidence_quality"
+        }
+      }
+    },
+    "source_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "status",
+        "observed_at",
+        "duration_ms",
+        "item_count",
+        "error_code",
+        "message"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/source_status"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "item_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "error_code": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "message": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "privacy_report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_version",
+        "document_names",
+        "network_addresses",
+        "user_identifiers",
+        "machine_identifiers",
+        "redacted_fields",
+        "notes"
+      ],
+      "properties": {
+        "policy_version": {
+          "type": "string"
+        },
+        "document_names": {
+          "type": "string",
+          "enum": [
+            "redacted",
+            "included"
+          ]
+        },
+        "network_addresses": {
+          "type": "string",
+          "enum": [
+            "masked",
+            "included"
+          ]
+        },
+        "user_identifiers": {
+          "type": "string",
+          "enum": [
+            "omitted",
+            "included"
+          ]
+        },
+        "machine_identifiers": {
+          "type": "string",
+          "enum": [
+            "masked",
+            "included"
+          ]
+        },
+        "redacted_fields": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

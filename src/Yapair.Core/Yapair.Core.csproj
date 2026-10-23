@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Yapair.Core</RootNamespace>
+    <Description>Platform-neutral contracts, redaction, and schema validation for YAPAIR.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JsonSchema.Net" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\schemas\system-snapshot.v1.schema.json"
+                      LogicalName="Yapair.Core.Schemas.system-snapshot.v1.schema.json" />
+    <EmbeddedResource Include="..\..\schemas\verification-result.v1.schema.json"
+                      LogicalName="Yapair.Core.Schemas.verification-result.v1.schema.json" />
+  </ItemGroup>
+
+</Project>

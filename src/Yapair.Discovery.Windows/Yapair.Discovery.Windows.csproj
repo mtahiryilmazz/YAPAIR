@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+
+    <RootNamespace>Yapair.Discovery.Windows</RootNamespace>
+    <Description>Read-only Windows discovery adapters for YAPAIR.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Diagnostics.EventLog" />
+    <PackageReference Include="System.Management" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Yapair.Core\Yapair.Core.csproj" />
+  </ItemGroup>
+
+</Project>

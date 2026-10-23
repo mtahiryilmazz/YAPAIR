@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Yapair.Cli/Yapair.Cli.csproj" />
+    <Project Path="src/Yapair.Core/Yapair.Core.csproj" />
+    <Project Path="src/Yapair.Discovery.Windows/Yapair.Discovery.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Yapair.Cli.Tests/Yapair.Cli.Tests.csproj" />
+    <Project Path="tests/Yapair.Core.Tests/Yapair.Core.Tests.csproj" />
+    <Project Path="tests/Yapair.Discovery.Windows.Tests/Yapair.Discovery.Windows.Tests.csproj" />
+    <Project Path="tests/Yapair.TestSupport/Yapair.TestSupport.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yapair.local/schemas/verification-result.v1.schema.json",
+  "title": "YAPAIR Verification Result v1",
+  "description": "Outcome of comparing a baseline snapshot with a fresh one, including user confirmation and evidence gaps.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "verification_id",
+    "verified_at",
+    "printer_name",
+    "outcome",
+    "user_confirmation",
+    "attempts",
+    "baseline_snapshot_id",
+    "current_snapshot_id",
+    "baseline_signals",
+    "current_signals",
+    "resolved_signals",
+    "persisting_signals",
+    "new_signals",
+    "unverifiable_signals",
+    "summary",
+    "details"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "verification_id": {
+      "type": "string",
+      "pattern": "^ver-[0-9a-f]{12}$"
+    },
+    "verified_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "printer_name": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "resolved",
+        "not_resolved",
+        "unknown",
+        "contradicted"
+      ]
+    },
+    "user_confirmation": {
+      "type": "string",
+      "enum": [
+        "not_asked",
+        "resolved",
+        "not_resolved",
+        "unsure"
+      ]
+    },
+    "attempts": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "baseline_snapshot_id": {
+      "type": "string"
+    },
+    "current_snapshot_id": {
+      "type": "string"
+    },
+    "baseline_signals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/problem_signal"
+      }
+    },
+    "current_signals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/problem_signal"
+      }
+    },
+    "resolved_signals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/problem_signal"
+      }
+    },
+    "persisting_signals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/problem_signal"
+      }
+    },
+    "new_signals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/problem_signal"
+      }
+    },
+    "unverifiable_signals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/problem_signal"
+      }
+    },
+    "summary": {
+      "type": "string"
+    },
+    "details": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "problem_signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "scope",
+        "code",
+        "detail"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

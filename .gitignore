@@ -1,0 +1,28 @@
+## Build outputs
+bin/
+obj/
+artifacts/
+publish/
+*.user
+*.suo
+.vs/
+
+## Test output
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+
+## Local diagnostic output (may contain sensitive machine data even after redaction)
+out/
+*.snapshot.json
+*.snapshot.log.jsonl
+
+## OS noise
+Thumbs.db
+.DS_Store
+
+## Local tooling
+.idea/
+.vscode/
