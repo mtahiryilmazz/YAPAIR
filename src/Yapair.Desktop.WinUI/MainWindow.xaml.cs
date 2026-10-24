@@ -53,7 +53,6 @@ public sealed partial class MainWindow : Window
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "YAPAIR", "authorization-mode.txt");
         LoadMode();
-        ModeCombo.SelectedIndex = (int)_mode;
         UpdateModeBadge();
 
         MessagesList.ItemsSource = Messages;
@@ -72,6 +71,187 @@ public sealed partial class MainWindow : Window
     public void HideWindow() => GetAppWindow().Hide();
 
     private void HideBtn_Click(object sender, RoutedEventArgs e) => HideWindow();
+    private async void SettingsBtn_Click(object sender, RoutedEventArgs e)
+    {
+        var serviceRunning = IsServiceInstalled();
+        var serviceStatus = serviceRunning ? GetServiceStatus() : "Kurulu degil";
+        var modeLabel = _mode switch
+        {
+            AuthorizationMode.ReadOnly => "R0 - Salt Okunur",
+            AuthorizationMode.Approved => "R1 - Onayli",
+            AuthorizationMode.AutoLowRisk => "R2 - Otomatik",
+            AuthorizationMode.FullAccess => "R3 - Uzman",
+            _ => "R0"
+        };
+
+        var panel = new StackPanel { Spacing = 14, MinWidth = 440 };
+
+        // -- Yetki Modu --
+        panel.Children.Add(new TextBlock { Text = "Yetki Modu", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, FontSize = 13, Foreground = HexBrush("#58a6ff") });
+        var modeCombo = new ComboBox { Width = 280, HorizontalAlignment = HorizontalAlignment.Left };
+        modeCombo.Items.Add(new ComboBoxItem { Content = "R0 - Salt Okunur", Tag = "0" });
+        modeCombo.Items.Add(new ComboBoxItem { Content = "R1 - Onayli", Tag = "1" });
+        modeCombo.Items.Add(new ComboBoxItem { Content = "R2 - Otomatik", Tag = "2" });
+        modeCombo.Items.Add(new ComboBoxItem { Content = "R3 - Uzman", Tag = "3" });
+        panel.Children.Add(modeCombo);
+
+        // -- Servis --
+        panel.Children.Add(new TextBlock { Text = "Arka Plan Servisi (YapairApi)", FontWeight = Microsoft.UI.Text.FontWeights.SemiBold, FontSize = 13, Foreground = HexBrush("#58a6ff"), Margin = new Thickness(0, 8, 0, 0) });
+        var statusBlock = new TextBlock
+        {
+            Text = $"Durum: {serviceStatus}",
+            Foreground = serviceRunning ? HexBrush("#3fb950") : HexBrush("#8b949e"),
+            FontSize = 12
+        };
+        panel.Children.Add(statusBlock);
+
+        var serviceButtons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        var installBtn = new Button
+        {
+            Content = "Servisi Kur",
+            Background = HexBrush("#238636"),
+            Foreground = new SolidColorBrush(Microsoft.UI.Colors.White),
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(14, 6, 14, 6),
+            IsEnabled = !serviceRunning
+        };
+        var removeBtn = new Button
+        {
+            Content = "Servisi Kaldir",
+            Background = HexBrush("#da3633"),
+            Foreground = new SolidColorBrush(Microsoft.UI.Colors.White),
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(14, 6, 14, 6),
+            IsEnabled = serviceRunning
+        };
+        serviceButtons.Children.Add(installBtn);
+        serviceButtons.Children.Add(removeBtn);
+        panel.Children.Add(serviceButtons);
+
+        var infoText = new TextBlock
+        {
+            Text = "Servis kurmak yonetici yetkisi gerektirir. Kurulumdan sonra API otomatik olarak Windows baslangicinda calisir.",
+            Foreground = HexBrush("#8b949e"),
+            FontSize = 11,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 4, 0, 0)
+        };
+        panel.Children.Add(infoText);
+
+        // -- Dialog --
+        var dialog = new ContentDialog
+        {
+            Title = "Ayarlar",
+            Content = new ScrollViewer { Content = panel, MaxHeight = 500 },
+            PrimaryButtonText = "Kaydet",
+            CloseButtonText = "Iptal",
+            XamlRoot = Content.XamlRoot
+        };
+
+        // -- Servis butonlari --
+        installBtn.Click += async (s, ev) =>
+        {
+            installBtn.IsEnabled = false;
+            statusBlock.Text = "Servis kuruluyor... (yonetici onayi gerekebilir)";
+            var ok = await RunElevatedScriptAsync("install-service.ps1");
+            serviceRunning = IsServiceInstalled();
+            serviceStatus = serviceRunning ? GetServiceStatus() : "Kurulum basarisiz";
+            statusBlock.Text = "Durum: " + serviceStatus;
+            statusBlock.Foreground = serviceRunning ? HexBrush("#3fb950") : HexBrush("#f85149");
+            installBtn.IsEnabled = !serviceRunning;
+            removeBtn.IsEnabled = serviceRunning;
+        };
+
+        removeBtn.Click += async (s, ev) =>
+        {
+            removeBtn.IsEnabled = false;
+            statusBlock.Text = "Servis kaldiriliyor...";
+            var ok = await RunElevatedScriptAsync("uninstall-service.ps1");
+            serviceRunning = IsServiceInstalled();
+            serviceStatus = serviceRunning ? GetServiceStatus() : "Kaldirildi";
+            statusBlock.Text = "Durum: " + serviceStatus;
+            statusBlock.Foreground = serviceRunning ? HexBrush("#3fb950") : HexBrush("#8b949e");
+            installBtn.IsEnabled = !serviceRunning;
+            removeBtn.IsEnabled = serviceRunning;
+        };
+
+        var result = await dialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            if (modeCombo.SelectedItem is ComboBoxItem item && int.TryParse(item.Tag?.ToString(), out var tag))
+            {
+                var newMode = (AuthorizationMode)tag;
+                if (newMode == AuthorizationMode.FullAccess && _mode != AuthorizationMode.FullAccess)
+                {
+                    var confirm = new ContentDialog
+                    {
+                        Title = "Tam Erisim (R3)",
+                        Content = new TextBlock { Text = "R3 guvenlik azaltan degisikliklere izin verir. Yetkili uzman misiniz?", TextWrapping = TextWrapping.Wrap },
+                        PrimaryButtonText = "Evet", CloseButtonText = "Vazgec",
+                        XamlRoot = Content.XamlRoot
+                    };
+                    if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+                }
+                var oldMode = _mode;
+                _mode = newMode;
+                SaveMode();
+                UpdateModeBadge();
+                await AuditLogger.LogModeChangeAsync(_repoRoot, oldMode.ToString(), _mode.ToString());
+            }
+        }
+    }
+
+    private static bool IsServiceInstalled()
+    {
+        try
+        {
+            using var sc = new System.ServiceProcess.ServiceController("YapairApi");
+            _ = sc.Status; // throws if not found
+            return true;
+        }
+        catch { return false; }
+    }
+
+    private static string GetServiceStatus()
+    {
+        try
+        {
+            using var sc = new System.ServiceProcess.ServiceController("YapairApi");
+            return sc.Status.ToString();
+        }
+        catch { return "Bilinmiyor"; }
+    }
+
+    private async Task<bool> RunElevatedScriptAsync(string scriptName)
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-ExecutionPolicy Bypass -NoProfile -Command \"Start-Process powershell -Verb RunAs -ArgumentList '-ExecutionPolicy Bypass -NoExit -File `\"{Path.Combine(_repoRoot, scriptName)}`\"'\"",
+                UseShellExecute = true,
+                CreateNoWindow = true,
+                WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+            };
+            var p = System.Diagnostics.Process.Start(psi);
+            if (p != null) await Task.Delay(1500);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            var err = new ContentDialog
+            {
+                Title = "Yonetici onayi gerekli",
+                Content = new TextBlock { Text = "Servis kurmak icin yonetici yetkisi gerekiyor.\n\nHata: " + ex.Message, TextWrapping = TextWrapping.Wrap },
+                CloseButtonText = "Tamam",
+                XamlRoot = Content.XamlRoot
+            };
+            await err.ShowAsync();
+            return false;
+        }
+    }
+
     private void CloseBtn_Click(object sender, RoutedEventArgs e) => HideWindow();
 
     private void LoadMode()
@@ -100,52 +280,9 @@ public sealed partial class MainWindow : Window
         catch { }
     }
 
-    private async void ModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (ModeCombo.SelectedItem is not ComboBoxItem item) return;
-        if (!int.TryParse(item.Tag?.ToString(), out var tag)) return;
-        var newMode = (AuthorizationMode)tag;
-
-        if (newMode == AuthorizationMode.FullAccess && _mode != AuthorizationMode.FullAccess)
-        {
-            var d = new ContentDialog
-            {
-                Title = "Tam Erisim (R3)",
-                Content = new TextBlock
-                {
-                    Text = "R3 guvenlik azaltan degisikliklere izin verir.\nYetkili uzman misiniz?",
-                    TextWrapping = TextWrapping.Wrap
-                },
-                PrimaryButtonText = "Evet",
-                CloseButtonText = "Vazgec",
-                XamlRoot = Content.XamlRoot
-            };
-            if (await d.ShowAsync() != ContentDialogResult.Primary)
-            {
-                ModeCombo.SelectedIndex = (int)_mode;
-                return;
-            }
-        }
-
-        var oldMode = _mode;
-        _mode = newMode;
-        SaveMode();
-        UpdateModeBadge();
-        await AuditLogger.LogModeChangeAsync(_repoRoot, oldMode.ToString(), _mode.ToString());
-    }
-
     private void UpdateModeBadge()
     {
-        var (label, color) = _mode switch
-        {
-            AuthorizationMode.ReadOnly => ("R0", "#58a6ff"),
-            AuthorizationMode.Approved => ("R1", "#d29922"),
-            AuthorizationMode.AutoLowRisk => ("R2", "#3fb950"),
-            AuthorizationMode.FullAccess => ("R3", "#f85149"),
-            _ => ("R0", "#8b949e")
-        };
-        ModeBadgeText.Text = label;
-        ModeBadge.Background = HexBrush(color);
+        // Yetki modu artik Ayarlar dialog'unda gosteriliyor - ana pencerede badge yok
     }
 
     private void InputBox_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -253,6 +390,37 @@ public sealed partial class MainWindow : Window
 
     private void AddBotMessage(string text) => Messages.Add(new ChatMessage
     { Author = "YAPAIR", Text = text, IsUser = false });
+
+    private async void HelpBtn_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var env = LoadEnv();
+            if (!env.TryGetValue("YAPAIR_API_KEY", out var apiKey)) { AddBotMessage("YAPAIR_API_KEY yok"); return; }
+            var baseUrl = env.TryGetValue("YAPAIR_API_BASE_URL", out var u) && !string.IsNullOrEmpty(u) ? u : "http://localhost:5080";
+
+            var problemText = _lastFindings.Count > 0
+                ? $"{_lastFindings.Count} bulgu cozulemedi. Ilk: {_lastFindings[0].Summary}"
+                : "Kullanici yardim istedi";
+
+            var payload = JsonSerializer.Serialize(new {
+                machine_key = Environment.MachineName,
+                machine_label = Environment.MachineName,
+                problem_text = problemText,
+                case_id = (string?)null
+            });
+
+            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            using var content = new System.Net.Http.StringContent(payload, System.Text.Encoding.UTF8, "application/json");
+            content.Headers.Add("X-Yapair-Api-Key", apiKey);
+            using var resp = await http.PostAsync(baseUrl.TrimEnd('/') + "/admin/help-requests", content);
+
+            AddBotMessage(resp.IsSuccessStatusCode
+                ? "Yardim talebiniz iletildi. Bilgi Islem ekibi en kisa surede donecek."
+                : "Yardim talebi gonderilemedi: HTTP " + (int)resp.StatusCode);
+        }
+        catch (Exception ex) { AddBotMessage("Yardim talebi hatasi: " + ex.Message); }
+    }
 
     private void ClearBtn_Click(object sender, RoutedEventArgs e)
     {

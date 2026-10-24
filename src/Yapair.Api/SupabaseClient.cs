@@ -220,6 +220,51 @@ public sealed class SupabaseClient
         await EnsureSuccess(resp, "batches delete", ct);
         return batchIds.Count;
     }
+    public async Task<long> InsertHelpRequestAsync(string? machineKey, string? machineLabel, string problemText, string? caseId, CancellationToken ct = default)
+    {
+        var row = new { machine_key = machineKey, machine_label = machineLabel, problem_text = problemText, case_id = caseId };
+        using var req = new HttpRequestMessage(HttpMethod.Post, "rest/v1/help_requests")
+        { Content = JsonContent.Create(row, options: Json) };
+        req.Headers.Add("Prefer", "return=representation");
+        using var resp = await _http.SendAsync(req, ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        await EnsureSuccess(resp, "help_request insert", ct);
+        using var doc = JsonDocument.Parse(body);
+        if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0)
+            return doc.RootElement[0].GetProperty("id").GetInt64();
+        return 0;
+    }
+
+    public async Task<List<Dictionary<string, object?>>> GetHelpRequestsAsync(string? status = null, CancellationToken ct = default)
+    {
+        var url = "rest/v1/help_requests?select=*&order=created_at.desc&limit=100";
+        if (!string.IsNullOrEmpty(status)) url += $"&status=eq.{Uri.EscapeDataString(status)}";
+        using var resp = await _http.GetAsync(url, ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException($"help_requests query failed: HTTP {(int)resp.StatusCode} {body}");
+        using var doc = JsonDocument.Parse(body);
+        var list = new List<Dictionary<string, object?>>();
+        foreach (var row in doc.RootElement.EnumerateArray())
+        {
+            var d = new Dictionary<string, object?>();
+            foreach (var p in row.EnumerateObject()) d[p.Name] = ConvertElement(p.Value);
+            list.Add(d);
+        }
+        return list;
+    }
+
+    public async Task UpdateHelpStatusAsync(long id, string status, string? adminNote, string? assignedTo, CancellationToken ct = default)
+    {
+        var url = $"rest/v1/help_requests?id=eq.{id}";
+        var row = new { status, admin_note = adminNote, assigned_to = assignedTo, updated_at = DateTimeOffset.UtcNow };
+        var body = JsonSerializer.Serialize(row, Json);
+        using var req = new HttpRequestMessage(new HttpMethod("PATCH"), url)
+        { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
+        req.Headers.Add("Prefer", "return=minimal");
+        using var resp = await _http.SendAsync(req, ct);
+        await EnsureSuccess(resp, "help_request update", ct);
+    }
 
     private static async Task EnsureSuccess(HttpResponseMessage resp, string what, CancellationToken ct)
     {

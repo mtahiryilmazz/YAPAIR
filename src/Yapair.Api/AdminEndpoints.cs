@@ -147,6 +147,48 @@ public static class AdminEndpoints
             if (!IsLocalhost(req)) return Results.Unauthorized();
             return await HandleIdsAction(req, ids => sb.DeleteBatchesAsync(ids, ct), "deleted");
         });
+        app.MapPost("/admin/help-requests", async (HttpRequest req, SupabaseClient sb, CancellationToken ct) =>
+        {
+            if (!IsLocalhost(req)) return Results.Unauthorized();
+            HelpRequest? body;
+            try { body = await req.ReadFromJsonAsync<HelpRequest>(ct); }
+            catch (Exception ex) { return Results.BadRequest(new { error = "invalid_json", detail = ex.Message }); }
+            if (body is null || string.IsNullOrWhiteSpace(body.ProblemText))
+                return Results.BadRequest(new { error = "empty_problem" });
+            try
+            {
+                var id = await sb.InsertHelpRequestAsync(body.MachineKey, body.MachineLabel, body.ProblemText, body.CaseId, ct);
+                return Results.Ok(new { status = "ok", id });
+            }
+            catch (Exception ex) { return Results.Json(new { error = "help_insert_failed", detail = ex.Message }, statusCode: 500); }
+        });
+
+        app.MapGet("/admin/help-requests", async (HttpRequest req, SupabaseClient sb, string? status, CancellationToken ct) =>
+        {
+            if (!IsLocalhost(req)) return Results.Unauthorized();
+            try
+            {
+                var rows = await sb.GetHelpRequestsAsync(status, ct);
+                return Results.Ok(new { total = rows.Count, items = rows });
+            }
+            catch (Exception ex) { return Results.Json(new { error = "help_list_failed", detail = ex.Message }, statusCode: 500); }
+        });
+
+        app.MapPost("/admin/help-requests/{id}/status", async (HttpRequest req, SupabaseClient sb, long id, CancellationToken ct) =>
+        {
+            if (!IsLocalhost(req)) return Results.Unauthorized();
+            HelpStatusUpdate? body;
+            try { body = await req.ReadFromJsonAsync<HelpStatusUpdate>(ct); }
+            catch (Exception ex) { return Results.BadRequest(new { error = "invalid_json", detail = ex.Message }); }
+            if (body is null || string.IsNullOrWhiteSpace(body.Status))
+                return Results.BadRequest(new { error = "empty_status" });
+            try
+            {
+                await sb.UpdateHelpStatusAsync(id, body.Status, body.AdminNote, body.AssignedTo, ct);
+                return Results.Ok(new { status = "ok" });
+            }
+            catch (Exception ex) { return Results.Json(new { error = "help_update_failed", detail = ex.Message }, statusCode: 500); }
+        });
 
         return app;
     }
@@ -224,3 +266,5 @@ public sealed record IdsRequest(List<string>? Ids);
 public sealed record ResearchRequest(string Query);
 public sealed record MachineUpdateRequest(string MachineKey, string? MachineLabel, string? Notes, string? Owner);
 public sealed record AuthAuditRequest(string? MachineKey, string? ModeBefore, string? ModeAfter, string? Note);
+public sealed record HelpRequest(string? MachineKey, string? MachineLabel, string? CaseId, string ProblemText);
+public sealed record HelpStatusUpdate(string Status, string? AdminNote, string? AssignedTo);

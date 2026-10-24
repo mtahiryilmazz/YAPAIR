@@ -3,9 +3,15 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Http.Json;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using Yapair.Api;
 
 var builder = WebApplication.CreateBuilder(args);
+
+if (!Environment.UserInteractive)
+{
+    builder.Host.UseWindowsService();
+}
 
 static string? FindEnvFile(string startDir)
 {

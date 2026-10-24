@@ -66,6 +66,18 @@
 <div class="cards" id="cards"><div class="card"><h3>Yukleniyor...</h3><div class="val">-</div></div></div>
 
 <!-- ============ VAKALAR ============ -->
+<h2>Yardim Talepleri <span class="hint" id="helpCount"></span></h2>
+<div class="toolbar">
+  <select id="helpStatusFilter" onchange="renderHelp()" style="background:#0d1117;color:#c9d1d9;border:1px solid #30363d;padding:4px 8px;border-radius:4px">
+    <option value="">Tumu</option>
+    <option value="open">Acik</option>
+    <option value="in_progress">Islemde</option>
+    <option value="resolved">Cozuldu</option>
+    <option value="closed">Kapandi</option>
+  </select>
+  <button class="sec small" onclick="refreshHelp()">Yenile</button>
+</div>
+<table id="helpTable"><tbody><tr><td class="empty">Yukleniyor...</td></tr></tbody></table>
 <h2>Vakalar</h2>
 <div class="tabs">
   <div class="tab active" data-arch="0" onclick="switchTab(this)">Aktif</div>
@@ -173,7 +185,57 @@ function switchTab(el){
   state.caseSel.clear();
   document.getElementById('archBtn').style.display = state.archived ? 'none' : '';
   document.getElementById('unarchBtn').style.display = state.archived ? '' : 'none';
-  refresh();
+  refreshHelp();
+
+async function refreshHelp(){
+  try {
+    const r = await fetch('/admin/help-requests').then(x => x.json());
+    state.helpRows = r.items || [];
+    renderHelp();
+  } catch(e) { console.error('help fetch', e); }
+}
+
+function renderHelp(){
+  const t = document.getElementById('helpTable');
+  if (!t) return;
+  const filter = document.getElementById('helpStatusFilter')?.value || '';
+  const rows = (state.helpRows || []).filter(r => !filter || r.status === filter);
+  const cnt = document.getElementById('helpCount');
+  if (cnt) cnt.textContent = `(${rows.length})`;
+  if (!rows.length){ t.innerHTML = '<tr><td class="empty">Yardim talebi yok</td></tr>'; return; }
+  let html = '<thead><tr><th>ID</th><th>Makine</th><th>Sorun</th><th>Durum</th><th>Zaman</th><th>Not</th><th></th></tr></thead><tbody>';
+  for (const r of rows){
+    const st = r.status || 'open';
+    const stCls = st === 'resolved' ? 'resolved' : st === 'closed' ? 'unknown' : st === 'in_progress' ? 'contradicted' : 'not_resolved';
+    html += `<tr>
+      <td><code>${esc(r.id)}</code></td>
+      <td><code>${esc(r.machine_label || r.machine_key || '-')}</code></td>
+      <td class="clip">${esc(r.problem_text || '')}</td>
+      <td><span class="badge ${stCls}">${esc(st)}</span></td>
+      <td>${esc(r.created_at || '')}</td>
+      <td class="clip">${esc(r.admin_note || '-')}</td>
+      <td><button class="sec small" onclick="updateHelpStatus(${r.id}, '${esc(st)}')">Durum</button></td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+async function updateHelpStatus(id, current){
+  const status = prompt('Yeni durum (open, in_progress, resolved, closed):', current === 'open' ? 'in_progress' : current);
+  if (!status) return;
+  const note = prompt('Admin notu (opsiyonel):') || null;
+  try {
+    const r = await fetch('/admin/help-requests/' + id + '/status', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ status, admin_note: note, assigned_to: null })
+    });
+    if (!r.ok) { alert('Hata: ' + await r.text()); return; }
+    await refreshHelp();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+setInterval(refreshHelp, 10000);
+refresh();
 }
 
 async function refresh(){
@@ -286,21 +348,171 @@ async function bulkArchive(){
   if (!state.caseSel.size) return alert('Once satir secin.');
   if (!confirm(state.caseSel.size + ' vakayi arsivlemek istiyor musunuz?')) return;
   await doBulk('/admin/cases/archive', Array.from(state.caseSel));
-  state.caseSel.clear(); await refresh();
+  state.caseSel.clear(); await refreshHelp();
+
+async function refreshHelp(){
+  try {
+    const r = await fetch('/admin/help-requests').then(x => x.json());
+    state.helpRows = r.items || [];
+    renderHelp();
+  } catch(e) { console.error('help fetch', e); }
+}
+
+function renderHelp(){
+  const t = document.getElementById('helpTable');
+  if (!t) return;
+  const filter = document.getElementById('helpStatusFilter')?.value || '';
+  const rows = (state.helpRows || []).filter(r => !filter || r.status === filter);
+  const cnt = document.getElementById('helpCount');
+  if (cnt) cnt.textContent = `(${rows.length})`;
+  if (!rows.length){ t.innerHTML = '<tr><td class="empty">Yardim talebi yok</td></tr>'; return; }
+  let html = '<thead><tr><th>ID</th><th>Makine</th><th>Sorun</th><th>Durum</th><th>Zaman</th><th>Not</th><th></th></tr></thead><tbody>';
+  for (const r of rows){
+    const st = r.status || 'open';
+    const stCls = st === 'resolved' ? 'resolved' : st === 'closed' ? 'unknown' : st === 'in_progress' ? 'contradicted' : 'not_resolved';
+    html += `<tr>
+      <td><code>${esc(r.id)}</code></td>
+      <td><code>${esc(r.machine_label || r.machine_key || '-')}</code></td>
+      <td class="clip">${esc(r.problem_text || '')}</td>
+      <td><span class="badge ${stCls}">${esc(st)}</span></td>
+      <td>${esc(r.created_at || '')}</td>
+      <td class="clip">${esc(r.admin_note || '-')}</td>
+      <td><button class="sec small" onclick="updateHelpStatus(${r.id}, '${esc(st)}')">Durum</button></td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+async function updateHelpStatus(id, current){
+  const status = prompt('Yeni durum (open, in_progress, resolved, closed):', current === 'open' ? 'in_progress' : current);
+  if (!status) return;
+  const note = prompt('Admin notu (opsiyonel):') || null;
+  try {
+    const r = await fetch('/admin/help-requests/' + id + '/status', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ status, admin_note: note, assigned_to: null })
+    });
+    if (!r.ok) { alert('Hata: ' + await r.text()); return; }
+    await refreshHelp();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+setInterval(refreshHelp, 10000);
+refresh();
 }
 
 async function bulkUnarchive(){
   if (!state.caseSel.size) return alert('Once satir secin.');
   if (!confirm(state.caseSel.size + ' vakayi arsivden cikarmak istiyor musunuz?')) return;
   await doBulk('/admin/cases/unarchive', Array.from(state.caseSel));
-  state.caseSel.clear(); await refresh();
+  state.caseSel.clear(); await refreshHelp();
+
+async function refreshHelp(){
+  try {
+    const r = await fetch('/admin/help-requests').then(x => x.json());
+    state.helpRows = r.items || [];
+    renderHelp();
+  } catch(e) { console.error('help fetch', e); }
+}
+
+function renderHelp(){
+  const t = document.getElementById('helpTable');
+  if (!t) return;
+  const filter = document.getElementById('helpStatusFilter')?.value || '';
+  const rows = (state.helpRows || []).filter(r => !filter || r.status === filter);
+  const cnt = document.getElementById('helpCount');
+  if (cnt) cnt.textContent = `(${rows.length})`;
+  if (!rows.length){ t.innerHTML = '<tr><td class="empty">Yardim talebi yok</td></tr>'; return; }
+  let html = '<thead><tr><th>ID</th><th>Makine</th><th>Sorun</th><th>Durum</th><th>Zaman</th><th>Not</th><th></th></tr></thead><tbody>';
+  for (const r of rows){
+    const st = r.status || 'open';
+    const stCls = st === 'resolved' ? 'resolved' : st === 'closed' ? 'unknown' : st === 'in_progress' ? 'contradicted' : 'not_resolved';
+    html += `<tr>
+      <td><code>${esc(r.id)}</code></td>
+      <td><code>${esc(r.machine_label || r.machine_key || '-')}</code></td>
+      <td class="clip">${esc(r.problem_text || '')}</td>
+      <td><span class="badge ${stCls}">${esc(st)}</span></td>
+      <td>${esc(r.created_at || '')}</td>
+      <td class="clip">${esc(r.admin_note || '-')}</td>
+      <td><button class="sec small" onclick="updateHelpStatus(${r.id}, '${esc(st)}')">Durum</button></td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+async function updateHelpStatus(id, current){
+  const status = prompt('Yeni durum (open, in_progress, resolved, closed):', current === 'open' ? 'in_progress' : current);
+  if (!status) return;
+  const note = prompt('Admin notu (opsiyonel):') || null;
+  try {
+    const r = await fetch('/admin/help-requests/' + id + '/status', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ status, admin_note: note, assigned_to: null })
+    });
+    if (!r.ok) { alert('Hata: ' + await r.text()); return; }
+    await refreshHelp();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+setInterval(refreshHelp, 10000);
+refresh();
 }
 
 async function bulkDeleteCases(){
   if (!state.caseSel.size) return alert('Once satir secin.');
   if (!confirm(state.caseSel.size + ' vakayi KALICI olarak silmek istediginize emin misiniz?')) return;
   await doBulk('/admin/cases/delete', Array.from(state.caseSel));
-  state.caseSel.clear(); await refresh();
+  state.caseSel.clear(); await refreshHelp();
+
+async function refreshHelp(){
+  try {
+    const r = await fetch('/admin/help-requests').then(x => x.json());
+    state.helpRows = r.items || [];
+    renderHelp();
+  } catch(e) { console.error('help fetch', e); }
+}
+
+function renderHelp(){
+  const t = document.getElementById('helpTable');
+  if (!t) return;
+  const filter = document.getElementById('helpStatusFilter')?.value || '';
+  const rows = (state.helpRows || []).filter(r => !filter || r.status === filter);
+  const cnt = document.getElementById('helpCount');
+  if (cnt) cnt.textContent = `(${rows.length})`;
+  if (!rows.length){ t.innerHTML = '<tr><td class="empty">Yardim talebi yok</td></tr>'; return; }
+  let html = '<thead><tr><th>ID</th><th>Makine</th><th>Sorun</th><th>Durum</th><th>Zaman</th><th>Not</th><th></th></tr></thead><tbody>';
+  for (const r of rows){
+    const st = r.status || 'open';
+    const stCls = st === 'resolved' ? 'resolved' : st === 'closed' ? 'unknown' : st === 'in_progress' ? 'contradicted' : 'not_resolved';
+    html += `<tr>
+      <td><code>${esc(r.id)}</code></td>
+      <td><code>${esc(r.machine_label || r.machine_key || '-')}</code></td>
+      <td class="clip">${esc(r.problem_text || '')}</td>
+      <td><span class="badge ${stCls}">${esc(st)}</span></td>
+      <td>${esc(r.created_at || '')}</td>
+      <td class="clip">${esc(r.admin_note || '-')}</td>
+      <td><button class="sec small" onclick="updateHelpStatus(${r.id}, '${esc(st)}')">Durum</button></td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+async function updateHelpStatus(id, current){
+  const status = prompt('Yeni durum (open, in_progress, resolved, closed):', current === 'open' ? 'in_progress' : current);
+  if (!status) return;
+  const note = prompt('Admin notu (opsiyonel):') || null;
+  try {
+    const r = await fetch('/admin/help-requests/' + id + '/status', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ status, admin_note: note, assigned_to: null })
+    });
+    if (!r.ok) { alert('Hata: ' + await r.text()); return; }
+    await refreshHelp();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+setInterval(refreshHelp, 10000);
+refresh();
 }
 
 // ---------- Batch'ler ----------
@@ -330,7 +542,57 @@ async function bulkDeleteBatches(){
   if (!state.batchSel.size) return alert('Once batch secin.');
   if (!confirm(state.batchSel.size + ' batch kaydini KALICI olarak silmek istediginize emin misiniz?')) return;
   await doBulk('/admin/batches/delete', Array.from(state.batchSel));
-  state.batchSel.clear(); await refresh();
+  state.batchSel.clear(); await refreshHelp();
+
+async function refreshHelp(){
+  try {
+    const r = await fetch('/admin/help-requests').then(x => x.json());
+    state.helpRows = r.items || [];
+    renderHelp();
+  } catch(e) { console.error('help fetch', e); }
+}
+
+function renderHelp(){
+  const t = document.getElementById('helpTable');
+  if (!t) return;
+  const filter = document.getElementById('helpStatusFilter')?.value || '';
+  const rows = (state.helpRows || []).filter(r => !filter || r.status === filter);
+  const cnt = document.getElementById('helpCount');
+  if (cnt) cnt.textContent = `(${rows.length})`;
+  if (!rows.length){ t.innerHTML = '<tr><td class="empty">Yardim talebi yok</td></tr>'; return; }
+  let html = '<thead><tr><th>ID</th><th>Makine</th><th>Sorun</th><th>Durum</th><th>Zaman</th><th>Not</th><th></th></tr></thead><tbody>';
+  for (const r of rows){
+    const st = r.status || 'open';
+    const stCls = st === 'resolved' ? 'resolved' : st === 'closed' ? 'unknown' : st === 'in_progress' ? 'contradicted' : 'not_resolved';
+    html += `<tr>
+      <td><code>${esc(r.id)}</code></td>
+      <td><code>${esc(r.machine_label || r.machine_key || '-')}</code></td>
+      <td class="clip">${esc(r.problem_text || '')}</td>
+      <td><span class="badge ${stCls}">${esc(st)}</span></td>
+      <td>${esc(r.created_at || '')}</td>
+      <td class="clip">${esc(r.admin_note || '-')}</td>
+      <td><button class="sec small" onclick="updateHelpStatus(${r.id}, '${esc(st)}')">Durum</button></td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+async function updateHelpStatus(id, current){
+  const status = prompt('Yeni durum (open, in_progress, resolved, closed):', current === 'open' ? 'in_progress' : current);
+  if (!status) return;
+  const note = prompt('Admin notu (opsiyonel):') || null;
+  try {
+    const r = await fetch('/admin/help-requests/' + id + '/status', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ status, admin_note: note, assigned_to: null })
+    });
+    if (!r.ok) { alert('Hata: ' + await r.text()); return; }
+    await refreshHelp();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+setInterval(refreshHelp, 10000);
+refresh();
 }
 
 // ---------- Makineler ----------
@@ -403,7 +665,57 @@ async function saveMachine(){
     const j = await r.json();
     if (!r.ok){ alert('Hata: ' + JSON.stringify(j)); return; }
     document.getElementById('machineModalBg').classList.remove('show');
-    await refresh();
+    await refreshHelp();
+
+async function refreshHelp(){
+  try {
+    const r = await fetch('/admin/help-requests').then(x => x.json());
+    state.helpRows = r.items || [];
+    renderHelp();
+  } catch(e) { console.error('help fetch', e); }
+}
+
+function renderHelp(){
+  const t = document.getElementById('helpTable');
+  if (!t) return;
+  const filter = document.getElementById('helpStatusFilter')?.value || '';
+  const rows = (state.helpRows || []).filter(r => !filter || r.status === filter);
+  const cnt = document.getElementById('helpCount');
+  if (cnt) cnt.textContent = `(${rows.length})`;
+  if (!rows.length){ t.innerHTML = '<tr><td class="empty">Yardim talebi yok</td></tr>'; return; }
+  let html = '<thead><tr><th>ID</th><th>Makine</th><th>Sorun</th><th>Durum</th><th>Zaman</th><th>Not</th><th></th></tr></thead><tbody>';
+  for (const r of rows){
+    const st = r.status || 'open';
+    const stCls = st === 'resolved' ? 'resolved' : st === 'closed' ? 'unknown' : st === 'in_progress' ? 'contradicted' : 'not_resolved';
+    html += `<tr>
+      <td><code>${esc(r.id)}</code></td>
+      <td><code>${esc(r.machine_label || r.machine_key || '-')}</code></td>
+      <td class="clip">${esc(r.problem_text || '')}</td>
+      <td><span class="badge ${stCls}">${esc(st)}</span></td>
+      <td>${esc(r.created_at || '')}</td>
+      <td class="clip">${esc(r.admin_note || '-')}</td>
+      <td><button class="sec small" onclick="updateHelpStatus(${r.id}, '${esc(st)}')">Durum</button></td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+async function updateHelpStatus(id, current){
+  const status = prompt('Yeni durum (open, in_progress, resolved, closed):', current === 'open' ? 'in_progress' : current);
+  if (!status) return;
+  const note = prompt('Admin notu (opsiyonel):') || null;
+  try {
+    const r = await fetch('/admin/help-requests/' + id + '/status', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ status, admin_note: note, assigned_to: null })
+    });
+    if (!r.ok) { alert('Hata: ' + await r.text()); return; }
+    await refreshHelp();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+setInterval(refreshHelp, 10000);
+refresh();
   } catch(e){ alert('Hata: ' + e.message); }
 }
 
@@ -411,7 +723,57 @@ async function bulkDeleteMachines(){
   if (!state.machineSel.size) return alert('Once makine secin.');
   if (!confirm(state.machineSel.size + ' makine kaydini KALICI olarak silmek istediginize emin misiniz?\n\nBu makinelere bagli vakalar da etkilenebilir.')) return;
   await doBulk('/admin/machines/delete', Array.from(state.machineSel));
-  state.machineSel.clear(); await refresh();
+  state.machineSel.clear(); await refreshHelp();
+
+async function refreshHelp(){
+  try {
+    const r = await fetch('/admin/help-requests').then(x => x.json());
+    state.helpRows = r.items || [];
+    renderHelp();
+  } catch(e) { console.error('help fetch', e); }
+}
+
+function renderHelp(){
+  const t = document.getElementById('helpTable');
+  if (!t) return;
+  const filter = document.getElementById('helpStatusFilter')?.value || '';
+  const rows = (state.helpRows || []).filter(r => !filter || r.status === filter);
+  const cnt = document.getElementById('helpCount');
+  if (cnt) cnt.textContent = `(${rows.length})`;
+  if (!rows.length){ t.innerHTML = '<tr><td class="empty">Yardim talebi yok</td></tr>'; return; }
+  let html = '<thead><tr><th>ID</th><th>Makine</th><th>Sorun</th><th>Durum</th><th>Zaman</th><th>Not</th><th></th></tr></thead><tbody>';
+  for (const r of rows){
+    const st = r.status || 'open';
+    const stCls = st === 'resolved' ? 'resolved' : st === 'closed' ? 'unknown' : st === 'in_progress' ? 'contradicted' : 'not_resolved';
+    html += `<tr>
+      <td><code>${esc(r.id)}</code></td>
+      <td><code>${esc(r.machine_label || r.machine_key || '-')}</code></td>
+      <td class="clip">${esc(r.problem_text || '')}</td>
+      <td><span class="badge ${stCls}">${esc(st)}</span></td>
+      <td>${esc(r.created_at || '')}</td>
+      <td class="clip">${esc(r.admin_note || '-')}</td>
+      <td><button class="sec small" onclick="updateHelpStatus(${r.id}, '${esc(st)}')">Durum</button></td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+async function updateHelpStatus(id, current){
+  const status = prompt('Yeni durum (open, in_progress, resolved, closed):', current === 'open' ? 'in_progress' : current);
+  if (!status) return;
+  const note = prompt('Admin notu (opsiyonel):') || null;
+  try {
+    const r = await fetch('/admin/help-requests/' + id + '/status', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ status, admin_note: note, assigned_to: null })
+    });
+    if (!r.ok) { alert('Hata: ' + await r.text()); return; }
+    await refreshHelp();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+setInterval(refreshHelp, 10000);
+refresh();
 }
 
 // ---------- Genel ----------
@@ -437,6 +799,56 @@ function esc(s){
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+refreshHelp();
+
+async function refreshHelp(){
+  try {
+    const r = await fetch('/admin/help-requests').then(x => x.json());
+    state.helpRows = r.items || [];
+    renderHelp();
+  } catch(e) { console.error('help fetch', e); }
+}
+
+function renderHelp(){
+  const t = document.getElementById('helpTable');
+  if (!t) return;
+  const filter = document.getElementById('helpStatusFilter')?.value || '';
+  const rows = (state.helpRows || []).filter(r => !filter || r.status === filter);
+  const cnt = document.getElementById('helpCount');
+  if (cnt) cnt.textContent = `(${rows.length})`;
+  if (!rows.length){ t.innerHTML = '<tr><td class="empty">Yardim talebi yok</td></tr>'; return; }
+  let html = '<thead><tr><th>ID</th><th>Makine</th><th>Sorun</th><th>Durum</th><th>Zaman</th><th>Not</th><th></th></tr></thead><tbody>';
+  for (const r of rows){
+    const st = r.status || 'open';
+    const stCls = st === 'resolved' ? 'resolved' : st === 'closed' ? 'unknown' : st === 'in_progress' ? 'contradicted' : 'not_resolved';
+    html += `<tr>
+      <td><code>${esc(r.id)}</code></td>
+      <td><code>${esc(r.machine_label || r.machine_key || '-')}</code></td>
+      <td class="clip">${esc(r.problem_text || '')}</td>
+      <td><span class="badge ${stCls}">${esc(st)}</span></td>
+      <td>${esc(r.created_at || '')}</td>
+      <td class="clip">${esc(r.admin_note || '-')}</td>
+      <td><button class="sec small" onclick="updateHelpStatus(${r.id}, '${esc(st)}')">Durum</button></td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+async function updateHelpStatus(id, current){
+  const status = prompt('Yeni durum (open, in_progress, resolved, closed):', current === 'open' ? 'in_progress' : current);
+  if (!status) return;
+  const note = prompt('Admin notu (opsiyonel):') || null;
+  try {
+    const r = await fetch('/admin/help-requests/' + id + '/status', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ status, admin_note: note, assigned_to: null })
+    });
+    if (!r.ok) { alert('Hata: ' + await r.text()); return; }
+    await refreshHelp();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+setInterval(refreshHelp, 10000);
 refresh();
 setInterval(refresh, 20000);
 </script>
