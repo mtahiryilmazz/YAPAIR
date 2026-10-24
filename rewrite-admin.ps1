@@ -1,0 +1,522 @@
+$ErrorActionPreference = "Stop"
+Set-Location "C:\Users\YILMAZ\Documents\deepseek-harness\default-workspace\yapair"
+
+# ============ Backend kontrol ============
+Write-Host "Backend kontrol..." -ForegroundColor Cyan
+$sb = Get-Content "src\Yapair.Api\SupabaseClient.cs" -Raw
+$admin = Get-Content "src\Yapair.Api\AdminEndpoints.cs" -Raw
+
+$backendOk = $true
+if ($sb -notmatch 'GetMachineAsync')   { Write-Host "  EKSIK: SupabaseClient.GetMachineAsync" -ForegroundColor Red; $backendOk = $false }
+if ($sb -notmatch 'UpdateMachineAsync'){ Write-Host "  EKSIK: SupabaseClient.UpdateMachineAsync" -ForegroundColor Red; $backendOk = $false }
+if ($sb -notmatch 'DeleteMachinesAsync'){ Write-Host "  EKSIK: SupabaseClient.DeleteMachinesAsync" -ForegroundColor Red; $backendOk = $false }
+if ($sb -notmatch 'DeleteBatchesAsync'){ Write-Host "  EKSIK: SupabaseClient.DeleteBatchesAsync" -ForegroundColor Red; $backendOk = $false }
+if ($admin -notmatch 'admin/machines/update') { Write-Host "  EKSIK: AdminEndpoints /admin/machines/update" -ForegroundColor Red; $backendOk = $false }
+if ($admin -notmatch 'admin/machines/delete') { Write-Host "  EKSIK: AdminEndpoints /admin/machines/delete" -ForegroundColor Red; $backendOk = $false }
+if ($admin -notmatch 'admin/batches/delete')  { Write-Host "  EKSIK: AdminEndpoints /admin/batches/delete" -ForegroundColor Red; $backendOk = $false }
+if ($admin -notmatch 'admin/machine/\{key\}') { Write-Host "  EKSIK: AdminEndpoints /admin/machine/{key}" -ForegroundColor Red; $backendOk = $false }
+
+if ($backendOk) {
+    Write-Host "  Backend endpoint'leri tamam" -ForegroundColor Green
+} else {
+    Write-Host ""
+    Write-Host "Backend eksik! Once su scripti calistir: patch-abc.ps1 veya manuel ekle." -ForegroundColor Yellow
+    Write-Host "Devam etmek icin Enter..." -ForegroundColor Yellow
+    Read-Host
+}
+
+# ============ index.html yeniden yaz ============
+Write-Host ""
+Write-Host "index.html yaziliyor..." -ForegroundColor Yellow
+New-Item -ItemType Directory -Force -Path "src\Yapair.Api\wwwroot\admin" | Out-Null
+$ts = Get-Date -Format "yyyyMMdd-HHmmss"
+if (Test-Path "src\Yapair.Api\wwwroot\admin\index.html") {
+    Copy-Item "src\Yapair.Api\wwwroot\admin\index.html" "src\Yapair.Api\wwwroot\admin\index.html.bak-$ts" -Force
+}
+
+@'
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>YAPAIR Admin</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,sans-serif;background:#0d1117;color:#c9d1d9;margin:0;padding:20px}
+  h1{color:#58a6ff;margin:0 0 4px}
+  .sub{color:#8b949e;margin:0 0 20px;font-size:13px}
+  h2{color:#58a6ff;font-size:16px;margin:24px 0 10px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+  .card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px}
+  .card h3{margin:0 0 6px;color:#8b949e;font-size:10px;text-transform:uppercase;letter-spacing:1px}
+  .card .val{font-size:24px;font-weight:600}
+  .ok{color:#3fb950}.err{color:#f85149}.warn{color:#d29922}.muted{color:#8b949e}
+  button{background:#238636;color:#fff;border:0;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:500;font-size:13px;white-space:nowrap}
+  button:hover{filter:brightness(1.15)}
+  button:disabled{opacity:.4;cursor:not-allowed;filter:none}
+  button.sec{background:#21262d;color:#c9d1d9;border:1px solid #30363d}
+  button.blue{background:#1f6feb}
+  button.red{background:#da3633}
+  button.amber{background:#9e6a03}
+  button.small{padding:4px 10px;font-size:11px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .toolbar .spacer{flex:1}
+  table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12px}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #30363d;vertical-align:top}
+  th{background:#161b22;color:#8b949e;font-weight:500}
+  tr.selected{background:#14324b}
+  tr:hover:not(.selected){background:#161b22}
+  td.check{width:30px}
+  .tablewrap{max-height:520px;overflow:auto;border:1px solid #30363d;border-radius:8px}
+  code{background:#161b22;padding:1px 5px;border-radius:3px;font-family:ui-monospace,monospace;font-size:11px}
+  .clip{max-width:280px;white-space:normal;word-break:break-word}
+  .badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:600}
+  .badge.resolved{background:#0d2a14;color:#3fb950}
+  .badge.not_resolved{background:#2a0d0d;color:#f85149}
+  .badge.contradicted{background:#2a1f0d;color:#d29922}
+  .badge.unknown{background:#21262d;color:#8b949e}
+  .badge.archived{background:#2a1f0d;color:#d29922;margin-left:4px}
+  .empty{color:#8b949e;font-style:italic;padding:24px;text-align:center}
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+  .modal-bg.show{display:flex}
+  .modal{background:#161b22;border:1px solid #30363d;border-radius:10px;max-width:820px;width:92%;max-height:88vh;overflow:auto;padding:22px}
+  .modal h2{margin:0 0 14px;color:#58a6ff}
+  .modal .field{margin-bottom:12px}
+  .modal .field label{display:block;color:#8b949e;font-size:11px;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+  .modal input[type=text], .modal textarea{width:100%;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit}
+  .modal textarea{min-height:80px;resize:vertical;font-family:ui-monospace,monospace;font-size:12px}
+  .modal input:focus, .modal textarea:focus{outline:0;border-color:#58a6ff}
+  .modal dl{display:grid;grid-template-columns:160px 1fr;gap:8px 14px;margin:0 0 16px}
+  .modal dt{color:#8b949e;font-weight:600;font-size:12px}
+  .modal dd{margin:0;font-size:13px;word-break:break-word}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+  .tabs{display:flex;gap:4px;margin-bottom:12px}
+  .tab{padding:6px 14px;border-radius:6px;cursor:pointer;background:#21262d;color:#8b949e;font-size:12px;border:1px solid #30363d}
+  .tab.active{background:#1f6feb;color:#fff;border-color:#1f6feb}
+  .hint{color:#8b949e;font-size:11px;margin-left:6px}
+</style>
+</head>
+<body>
+<h1>YAPAIR Admin</h1>
+<p class="sub">Vaka / batch / makine yonetimi · sadece bu makineden erisim</p>
+
+<div class="cards" id="cards"><div class="card"><h3>Yukleniyor...</h3><div class="val">-</div></div></div>
+
+<!-- ============ VAKALAR ============ -->
+<h2>Vakalar</h2>
+<div class="tabs">
+  <div class="tab active" data-arch="0" onclick="switchTab(this)">Aktif</div>
+  <div class="tab" data-arch="1" onclick="switchTab(this)">Arsiv</div>
+</div>
+
+<div class="toolbar">
+  <button class="sec small" onclick="selectAllCases(true)">Tumunu Sec</button>
+  <button class="sec small" onclick="selectAllCases(false)">Temizle</button>
+  <span id="caseSelInfo" class="muted">0 secili</span>
+  <span class="spacer"></span>
+  <button class="blue small" onclick="refresh()">Yenile</button>
+  <button class="sec small" onclick="exportCsv()">Excel/CSV</button>
+  <button class="sec small" onclick="printReport()">PDF / Yazdir</button>
+  <button class="amber small" onclick="bulkArchive()" id="archBtn">Arsivle</button>
+  <button class="sec small" onclick="bulkUnarchive()" id="unarchBtn" style="display:none">Arsivden Cikar</button>
+  <button class="red small" onclick="bulkDeleteCases()">Sil</button>
+</div>
+
+<div class="tablewrap"><table id="casesTable"><tbody><tr><td class="empty">Yukleniyor...</td></tr></tbody></table></div>
+
+<!-- ============ BATCH'LER ============ -->
+<h2>Batch'ler <span class="hint">(sync_receipts)</span></h2>
+<div class="toolbar">
+  <button class="sec small" onclick="selectAllBatches(true)">Tumunu Sec</button>
+  <button class="sec small" onclick="selectAllBatches(false)">Temizle</button>
+  <span id="batchSelInfo" class="muted">0 secili</span>
+  <span class="spacer"></span>
+  <button class="red small" onclick="bulkDeleteBatches()">Secili Batch'leri Sil</button>
+</div>
+<table id="batchesTable"></table>
+
+<!-- ============ MAKINELER ============ -->
+<h2>Makineler <span class="hint">(makine adi, sahip, notlar duzenlenebilir)</span></h2>
+<div class="toolbar">
+  <button class="sec small" onclick="selectAllMachines(true)">Tumunu Sec</button>
+  <button class="sec small" onclick="selectAllMachines(false)">Temizle</button>
+  <span id="machineSelInfo" class="muted">0 secili</span>
+  <span class="spacer"></span>
+  <button class="red small" onclick="bulkDeleteMachines()">Secili Makineleri Sil</button>
+</div>
+<table id="machinesTable"></table>
+
+<!-- ============ VAKA DETAY MODAL ============ -->
+<div class="modal-bg" id="caseModalBg" onclick="closeCaseModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2>Vaka Detayi</h2>
+    <dl id="caseModalBody"></dl>
+    <div class="modal-actions">
+      <button class="sec" onclick="closeCaseModal()">Kapat</button>
+      <button class="sec" onclick="printCase()">Yazdir/PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MAKINE DETAY MODAL ============ -->
+<div class="modal-bg" id="machineModalBg" onclick="closeMachineModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h2>Makine Detayi</h2>
+    <div class="field">
+      <label>Makine Anahtari (salt okunur)</label>
+      <input type="text" id="mmKey" readonly style="color:#8b949e">
+    </div>
+    <div class="field">
+      <label>Bilgisayar Adi / Etiket</label>
+      <input type="text" id="mmLabel" placeholder="ornek: BT-MUHASEBE-01">
+    </div>
+    <div class="field">
+      <label>Kullanici / Sahip</label>
+      <input type="text" id="mmOwner" placeholder="ornek: Ahmet Yilmaz - Muhasebe">
+    </div>
+    <div class="field">
+      <label>Notlar</label>
+      <textarea id="mmNotes" placeholder="Makine hakkinda notlar, ariza gecmisi, ozel durumlar..."></textarea>
+    </div>
+    <div class="field">
+      <label>Ilk Gorulme</label>
+      <input type="text" id="mmFirst" readonly style="color:#8b949e">
+    </div>
+    <div class="field">
+      <label>Son Gorulme</label>
+      <input type="text" id="mmLast" readonly style="color:#8b949e">
+    </div>
+    <div class="modal-actions">
+      <button class="sec" onclick="closeMachineModal()">Kapat</button>
+      <button onclick="saveMachine()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const state = {
+  archived: false,
+  caseRows: [], caseSel: new Set(),
+  batchRows: [], batchSel: new Set(),
+  machineRows: [], machineSel: new Set(),
+  detailCaseId: null,
+  detailMachineKey: null
+};
+
+function switchTab(el){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  state.archived = el.dataset.arch === '1';
+  state.caseSel.clear();
+  document.getElementById('archBtn').style.display = state.archived ? 'none' : '';
+  document.getElementById('unarchBtn').style.display = state.archived ? '' : 'none';
+  refresh();
+}
+
+async function refresh(){
+  try {
+    const [health, stats] = await Promise.all([
+      fetch('/health').then(r => r.json()),
+      fetch('/admin/stats' + (state.archived ? '?archived=1' : '')).then(r => r.json())
+    ]);
+    renderHealth(health);
+    renderStats(stats);
+  } catch(e){
+    document.getElementById('cards').innerHTML = `<div class="card"><h3>Hata</h3><div class="val err">${e.message}</div></div>`;
+  }
+}
+
+function renderHealth(h){
+  document.getElementById('cards').innerHTML =
+    `<div class="card"><h3>API Durumu</h3><div class="val ok">${h.status}</div></div>` +
+    `<div class="card"><h3>Servis</h3><div class="val" style="font-size:14px">${h.service}</div></div>` +
+    `<div class="card"><h3>Surum</h3><div class="val" style="font-size:14px">${h.version}</div></div>`;
+}
+
+function renderStats(s){
+  const c = document.getElementById('cards');
+  c.innerHTML +=
+    `<div class="card"><h3>Toplam Vaka</h3><div class="val">${s.cases.total}</div></div>` +
+    `<div class="card"><h3>Toplam Batch</h3><div class="val">${s.batches.total}</div></div>` +
+    `<div class="card"><h3>Toplam Makine</h3><div class="val">${s.machines.total}</div></div>`;
+
+  state.caseRows = s.cases.recent || [];
+  state.batchRows = s.batches.recent || [];
+  state.machineRows = s.machines.recent || [];
+  state.caseSel.clear();
+  state.batchSel.clear();
+  state.machineSel.clear();
+  renderCases();
+  renderBatches();
+  renderMachines();
+  updateSelInfo();
+}
+
+// ---------- Vakalar ----------
+function renderCases(){
+  const t = document.getElementById('casesTable');
+  if (!state.caseRows.length){ t.innerHTML = '<tbody><tr><td class="empty">Kayit yok</td></tr></tbody>'; return; }
+  let html = '<thead><tr><th class="check"></th><th>Bilgisayar</th><th>Sorun</th><th>Semptom</th><th>Aile</th><th>Sonuc</th><th>Onay</th><th>Playbook</th><th>Tarih</th><th></th></tr></thead><tbody>';
+  for (const r of state.caseRows){
+    const id = r.case_id || '';
+    const checked = state.caseSel.has(id) ? 'checked' : '';
+    const rowCls = state.caseSel.has(id) ? 'selected' : '';
+    const machine = (r.machines && r.machines.machine_label) || r.machine_key || '-';
+    const symptom = (r.symptom_label && r.symptom_label !== r.symptom_code) ? r.symptom_label : (r.symptom_code || '-');
+    const outcome = r.outcome || 'unknown';
+    const arch = r.archived_at ? '<span class="badge archived">arsiv</span>' : '';
+    html += `<tr class="${rowCls}">
+      <td class="check"><input type="checkbox" ${checked} onchange="toggleCase('${esc(id)}', this.checked)"></td>
+      <td><code>${esc(machine)}</code></td>
+      <td class="clip">${esc(r.normalized_text || '-')}</td>
+      <td>${esc(symptom)}</td>
+      <td>${esc(r.issue_family || '-')}</td>
+      <td><span class="badge ${outcome}">${esc(outcome)}</span></td>
+      <td>${esc(r.user_confirmation || '-')}</td>
+      <td><code>${esc(r.playbook_id || '-')}</code></td>
+      <td>${esc(r.received_at || '')}</td>
+      <td><button class="sec small" onclick="showCaseDetail('${esc(id)}')">Detay</button> ${arch}</td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+function toggleCase(id, on){ on ? state.caseSel.add(id) : state.caseSel.delete(id); updateSelInfo(); renderCases(); }
+function selectAllCases(on){ state.caseSel.clear(); if (on) state.caseRows.forEach(r => state.caseSel.add(r.case_id)); renderCases(); updateSelInfo(); }
+
+async function showCaseDetail(id){
+  state.detailCaseId = id;
+  const bg = document.getElementById('caseModalBg');
+  const body = document.getElementById('caseModalBody');
+  body.innerHTML = '<dt>Yukleniyor...</dt><dd></dd>';
+  bg.classList.add('show');
+  try {
+    const r = await fetch('/admin/case/' + encodeURIComponent(id)).then(x => x.json());
+    if (r.error){ body.innerHTML = `<dt>Hata</dt><dd class="err">${esc(r.detail || r.error)}</dd>`; return; }
+    const machine = (r.machines && r.machines.machine_label) || r.machine_key || '-';
+    const fields = [
+      ['Vaka ID', r.case_id], ['Bilgisayar', machine], ['Makine Anahtari', r.machine_key],
+      ['Sorun (ham)', r.normalized_text], ['Semptom', r.symptom_label || r.symptom_code],
+      ['Semptom Kodu', r.symptom_code], ['Aile', r.issue_family], ['Domain', r.domain],
+      ['Uygulanan Playbook', r.playbook_id], ['Sonuc', r.outcome],
+      ['Kullanici Onayi', r.user_confirmation], ['Alindi', r.received_at],
+      ['Arsiv', r.archived_at || '-'], ['Ham Metin', r.raw_text || '-']
+    ];
+    body.innerHTML = fields.map(([k,v]) => `<dt>${esc(k)}</dt><dd>${v==null?'-':esc(String(v))}</dd>`).join('');
+  } catch(e){ body.innerHTML = `<dt>Hata</dt><dd class="err">${esc(e.message)}</dd>`; }
+}
+
+function closeCaseModal(ev){
+  if (ev && ev.target !== document.getElementById('caseModalBg')) return;
+  document.getElementById('caseModalBg').classList.remove('show');
+}
+
+function printCase(){
+  if (!state.detailCaseId) return;
+  window.open('/admin/print?id=' + encodeURIComponent(state.detailCaseId) + '&auto=1', '_blank');
+}
+
+function exportCsv(){ window.location = '/admin/export.csv' + (state.archived ? '?archived=1' : ''); }
+function printReport(){ window.open('/admin/print' + (state.archived ? '?archived=1&auto=1' : '?auto=1'), '_blank'); }
+
+async function bulkArchive(){
+  if (!state.caseSel.size) return alert('Once satir secin.');
+  if (!confirm(state.caseSel.size + ' vakayi arsivlemek istiyor musunuz?')) return;
+  await doBulk('/admin/cases/archive', Array.from(state.caseSel));
+  state.caseSel.clear(); await refresh();
+}
+
+async function bulkUnarchive(){
+  if (!state.caseSel.size) return alert('Once satir secin.');
+  if (!confirm(state.caseSel.size + ' vakayi arsivden cikarmak istiyor musunuz?')) return;
+  await doBulk('/admin/cases/unarchive', Array.from(state.caseSel));
+  state.caseSel.clear(); await refresh();
+}
+
+async function bulkDeleteCases(){
+  if (!state.caseSel.size) return alert('Once satir secin.');
+  if (!confirm(state.caseSel.size + ' vakayi KALICI olarak silmek istediginize emin misiniz?')) return;
+  await doBulk('/admin/cases/delete', Array.from(state.caseSel));
+  state.caseSel.clear(); await refresh();
+}
+
+// ---------- Batch'ler ----------
+function renderBatches(){
+  const t = document.getElementById('batchesTable');
+  if (!state.batchRows.length){ t.innerHTML = '<tr><td class="empty">Kayit yok</td></tr>'; return; }
+  let html = '<thead><tr><th class="check"></th><th>Batch ID</th><th>Adet</th><th>API</th><th>Zaman</th></tr></thead><tbody>';
+  for (const r of state.batchRows){
+    const id = r.batch_id || '';
+    const checked = state.batchSel.has(id) ? 'checked' : '';
+    const rowCls = state.batchSel.has(id) ? 'selected' : '';
+    html += `<tr class="${rowCls}">
+      <td class="check"><input type="checkbox" ${checked} onchange="toggleBatch('${esc(id)}', this.checked)"></td>
+      <td><code>${esc(id)}</code></td>
+      <td>${r.case_count}</td>
+      <td>${esc(r.api_version||'')}</td>
+      <td>${esc(r.received_at||'')}</td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+function toggleBatch(id, on){ on ? state.batchSel.add(id) : state.batchSel.delete(id); updateSelInfo(); renderBatches(); }
+function selectAllBatches(on){ state.batchSel.clear(); if (on) state.batchRows.forEach(r => state.batchSel.add(r.batch_id)); renderBatches(); updateSelInfo(); }
+
+async function bulkDeleteBatches(){
+  if (!state.batchSel.size) return alert('Once batch secin.');
+  if (!confirm(state.batchSel.size + ' batch kaydini KALICI olarak silmek istediginize emin misiniz?')) return;
+  await doBulk('/admin/batches/delete', Array.from(state.batchSel));
+  state.batchSel.clear(); await refresh();
+}
+
+// ---------- Makineler ----------
+function renderMachines(){
+  const t = document.getElementById('machinesTable');
+  if (!state.machineRows.length){ t.innerHTML = '<tr><td class="empty">Kayit yok</td></tr>'; return; }
+  let html = '<thead><tr><th class="check"></th><th>Makine Anahtari</th><th>Bilgisayar Adi</th><th>Kullanici</th><th>Notlar</th><th>Son Gorulme</th><th></th></tr></thead><tbody>';
+  for (const r of state.machineRows){
+    const key = r.machine_key || '';
+    const checked = state.machineSel.has(key) ? 'checked' : '';
+    const rowCls = state.machineSel.has(key) ? 'selected' : '';
+    const notes = r.notes ? (r.notes.length > 60 ? r.notes.substring(0,60) + '...' : r.notes) : '-';
+    html += `<tr class="${rowCls}">
+      <td class="check"><input type="checkbox" ${checked} onchange="toggleMachine('${esc(key)}', this.checked)"></td>
+      <td><code>${esc(key)}</code></td>
+      <td>${esc(r.machine_label || '-')}</td>
+      <td>${esc(r.owner || '-')}</td>
+      <td class="clip">${esc(notes)}</td>
+      <td>${esc(r.last_seen||'')}</td>
+      <td><button class="sec small" onclick="showMachineDetail('${esc(key)}')">Detay / Duzenle</button></td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+function toggleMachine(k, on){ on ? state.machineSel.add(k) : state.machineSel.delete(k); updateSelInfo(); renderMachines(); }
+function selectAllMachines(on){ state.machineSel.clear(); if (on) state.machineRows.forEach(r => state.machineSel.add(r.machine_key)); renderMachines(); updateSelInfo(); }
+
+async function showMachineDetail(key){
+  state.detailMachineKey = key;
+  const bg = document.getElementById('machineModalBg');
+  bg.classList.add('show');
+  document.getElementById('mmKey').value = key;
+  document.getElementById('mmLabel').value = '';
+  document.getElementById('mmOwner').value = '';
+  document.getElementById('mmNotes').value = '';
+  document.getElementById('mmFirst').value = '';
+  document.getElementById('mmLast').value = '';
+
+  try {
+    const r = await fetch('/admin/machine/' + encodeURIComponent(key)).then(x => x.json());
+    if (r.error){ alert('Hata: ' + (r.detail || r.error)); return; }
+    document.getElementById('mmLabel').value = r.machine_label || '';
+    document.getElementById('mmOwner').value = r.owner || '';
+    document.getElementById('mmNotes').value = r.notes || '';
+    document.getElementById('mmFirst').value = r.first_seen || '';
+    document.getElementById('mmLast').value = r.last_seen || '';
+  } catch(e){ alert('Hata: ' + e.message); }
+}
+
+function closeMachineModal(ev){
+  if (ev && ev.target !== document.getElementById('machineModalBg')) return;
+  document.getElementById('machineModalBg').classList.remove('show');
+}
+
+async function saveMachine(){
+  const key = state.detailMachineKey;
+  if (!key) return;
+  const payload = {
+    machine_key: key,
+    machine_label: document.getElementById('mmLabel').value.trim(),
+    owner: document.getElementById('mmOwner').value.trim(),
+    notes: document.getElementById('mmNotes').value.trim()
+  };
+  try {
+    const r = await fetch('/admin/machines/update', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const j = await r.json();
+    if (!r.ok){ alert('Hata: ' + JSON.stringify(j)); return; }
+    document.getElementById('machineModalBg').classList.remove('show');
+    await refresh();
+  } catch(e){ alert('Hata: ' + e.message); }
+}
+
+async function bulkDeleteMachines(){
+  if (!state.machineSel.size) return alert('Once makine secin.');
+  if (!confirm(state.machineSel.size + ' makine kaydini KALICI olarak silmek istediginize emin misiniz?\n\nBu makinelere bagli vakalar da etkilenebilir.')) return;
+  await doBulk('/admin/machines/delete', Array.from(state.machineSel));
+  state.machineSel.clear(); await refresh();
+}
+
+// ---------- Genel ----------
+async function doBulk(url, ids){
+  try {
+    const r = await fetch(url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    });
+    const j = await r.json();
+    if (!r.ok){ alert('Hata: ' + JSON.stringify(j)); return; }
+  } catch(e){ alert('Hata: ' + e.message); }
+}
+
+function updateSelInfo(){
+  document.getElementById('caseSelInfo').textContent = state.caseSel.size + ' secili';
+  document.getElementById('batchSelInfo').textContent = state.batchSel.size + ' secili';
+  document.getElementById('machineSelInfo').textContent = state.machineSel.size + ' secili';
+}
+
+function esc(s){
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+refresh();
+setInterval(refresh, 20000);
+</script>
+</body>
+</html>
+'@ | Set-Content "src\Yapair.Api\wwwroot\admin\index.html" -Encoding UTF8
+Write-Host "  index.html yazildi ($((Get-Item 'src\Yapair.Api\wwwroot\admin\index.html').Length) byte)" -ForegroundColor Green
+
+# ============ Dogrulama ============
+Write-Host ""
+Write-Host "Dogrulama:" -ForegroundColor Cyan
+$h = Get-Content "src\Yapair.Api\wwwroot\admin\index.html" -Raw
+$checks = @{
+    "batchSel (coklu secim)"   = $h -match 'batchSel'
+    "machineSel (coklu secim)" = $h -match 'machineSel'
+    "bulkDeleteBatches"        = $h -match 'bulkDeleteBatches'
+    "bulkDeleteMachines"       = $h -match 'bulkDeleteMachines'
+    "showMachineDetail"        = $h -match 'showMachineDetail'
+    "saveMachine"              = $h -match 'saveMachine'
+    "mmLabel (makine adi)"     = $h -match 'mmLabel'
+    "mmOwner (kullanici)"      = $h -match 'mmOwner'
+    "mmNotes (notlar)"         = $h -match 'mmNotes'
+    "admin/machines/update"    = $h -match 'admin/machines/update'
+}
+$allOk = $true
+foreach ($k in $checks.Keys) {
+    $ok = $checks[$k]
+    if (-not $ok) { $allOk = $false }
+    Write-Host ("  {0,-28} {1}" -f $k, $(if ($ok) {"OK"} else {"EKSIK"})) -ForegroundColor $(if ($ok) {"Green"} else {"Red"})
+}
+
+if (-not $allOk) {
+    Write-Host ""
+    Write-Host "Bazi ozellikler eksik! index.html'i kontrol et." -ForegroundColor Red
+    exit 1
+}
+
+# ============ Build (wwwroot kopyalanmasi icin) ============
+Write-Host ""
+Write-Host "Build..." -ForegroundColor Yellow
+dotnet build "src\Yapair.Api\Yapair.Api.csproj" --nologo -v q
+if ($LASTEXITCODE -ne 0) { Write-Host "BUILD BASARISIZ" -ForegroundColor Red; exit 1 }
+Write-Host "BUILD BASARILI" -ForegroundColor Green
+Write-Host ""
+Write-Host "API'yi yeniden baslat, sonra Ctrl+F5 ile paneli yenile:" -ForegroundColor Cyan
+Write-Host "  http://localhost:5080/admin/index.html" -ForegroundColor Cyan

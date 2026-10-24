@@ -109,6 +109,44 @@ public static class AdminEndpoints
             try { return Results.Ok(await svc.ResearchAsync(body.Query, ct)); }
             catch (Exception ex) { return Results.Json(new { error = "research_failed", detail = ex.Message }, statusCode: 500); }
         });
+        app.MapGet("/admin/machine/{key}", async (HttpRequest req, SupabaseClient sb, string key, CancellationToken ct) =>
+        {
+            if (!IsLocalhost(req)) return Results.Unauthorized();
+            try
+            {
+                var row = await sb.GetMachineAsync(key, ct);
+                return row is null ? Results.NotFound(new { error = "not_found" }) : Results.Ok(row);
+            }
+            catch (Exception ex) { return Results.Json(new { error = "machine_detail_failed", detail = ex.Message }, statusCode: 500); }
+        });
+
+        app.MapPost("/admin/machines/update", async (HttpRequest req, SupabaseClient sb, CancellationToken ct) =>
+        {
+            if (!IsLocalhost(req)) return Results.Unauthorized();
+            MachineUpdateRequest? body;
+            try { body = await req.ReadFromJsonAsync<MachineUpdateRequest>(ct); }
+            catch (Exception ex) { return Results.BadRequest(new { error = "invalid_json", detail = ex.Message }); }
+            if (body is null || string.IsNullOrEmpty(body.MachineKey))
+                return Results.BadRequest(new { error = "missing_machine_key" });
+            try
+            {
+                await sb.UpdateMachineAsync(body.MachineKey, body.MachineLabel, body.Notes, body.Owner, ct);
+                return Results.Ok(new { status = "ok" });
+            }
+            catch (Exception ex) { return Results.Json(new { error = "update_failed", detail = ex.Message }, statusCode: 500); }
+        });
+
+        app.MapPost("/admin/machines/delete", async (HttpRequest req, SupabaseClient sb, CancellationToken ct) =>
+        {
+            if (!IsLocalhost(req)) return Results.Unauthorized();
+            return await HandleIdsAction(req, ids => sb.DeleteMachinesAsync(ids, ct), "deleted");
+        });
+
+        app.MapPost("/admin/batches/delete", async (HttpRequest req, SupabaseClient sb, CancellationToken ct) =>
+        {
+            if (!IsLocalhost(req)) return Results.Unauthorized();
+            return await HandleIdsAction(req, ids => sb.DeleteBatchesAsync(ids, ct), "deleted");
+        });
 
         return app;
     }

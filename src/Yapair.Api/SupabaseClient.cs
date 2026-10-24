@@ -1,4 +1,4 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace Yapair.Api;
@@ -170,6 +170,55 @@ public sealed class SupabaseClient
         var list = new List<object?>();
         foreach (var item in e.EnumerateArray()) list.Add(ConvertElement(item));
         return list;
+    }
+    public async Task<Dictionary<string, object?>?> GetMachineAsync(string machineKey, CancellationToken ct = default)
+    {
+        const string select = "machine_key,machine_label,first_seen,last_seen,notes,owner";
+        var url = $"rest/v1/machines?machine_key=eq.{Uri.EscapeDataString(machineKey)}&select={select}&limit=1";
+        using var resp = await _http.GetAsync(url, ct);
+        var body = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new InvalidOperationException($"machine query failed: HTTP {(int)resp.StatusCode} {body}");
+        using var doc = JsonDocument.Parse(body);
+        if (doc.RootElement.ValueKind != JsonValueKind.Array || doc.RootElement.GetArrayLength() == 0)
+            return null;
+        var row = doc.RootElement[0];
+        var dict = new Dictionary<string, object?>();
+        foreach (var p in row.EnumerateObject()) dict[p.Name] = ConvertElement(p.Value);
+        return dict;
+    }
+
+    public async Task UpdateMachineAsync(string machineKey, string? machineLabel, string? notes, string? owner, CancellationToken ct = default)
+    {
+        var url = $"rest/v1/machines?machine_key=eq.{Uri.EscapeDataString(machineKey)}";
+        var body = JsonSerializer.Serialize(new { machine_label = machineLabel, notes, owner }, Json);
+        using var req = new HttpRequestMessage(new HttpMethod("PATCH"), url)
+        { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
+        req.Headers.Add("Prefer", "return=minimal");
+        using var resp = await _http.SendAsync(req, ct);
+        await EnsureSuccess(resp, "machine update", ct);
+    }
+
+    public async Task<int> DeleteMachinesAsync(IReadOnlyList<string> keys, CancellationToken ct = default)
+    {
+        if (keys.Count == 0) return 0;
+        var url = "rest/v1/machines?machine_key=in.(" + BuildIdList(keys) + ")";
+        using var req = new HttpRequestMessage(HttpMethod.Delete, url);
+        req.Headers.Add("Prefer", "return=minimal");
+        using var resp = await _http.SendAsync(req, ct);
+        await EnsureSuccess(resp, "machines delete", ct);
+        return keys.Count;
+    }
+
+    public async Task<int> DeleteBatchesAsync(IReadOnlyList<string> batchIds, CancellationToken ct = default)
+    {
+        if (batchIds.Count == 0) return 0;
+        var url = "rest/v1/sync_receipts?batch_id=in.(" + BuildIdList(batchIds) + ")";
+        using var req = new HttpRequestMessage(HttpMethod.Delete, url);
+        req.Headers.Add("Prefer", "return=minimal");
+        using var resp = await _http.SendAsync(req, ct);
+        await EnsureSuccess(resp, "batches delete", ct);
+        return batchIds.Count;
     }
 
     private static async Task EnsureSuccess(HttpResponseMessage resp, string what, CancellationToken ct)
