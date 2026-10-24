@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 
 namespace Yapair.Api;
@@ -94,6 +94,21 @@ public static class AdminEndpoints
             }
             catch (Exception ex) { return Results.Json(new { error = "send_failed", detail = ex.Message }, statusCode: 500); }
         });
+        app.MapPost("/admin/research", async (HttpRequest req, CancellationToken ct) =>
+        {
+            if (!IsLocalhost(req)) return Results.Unauthorized();
+            var env = LoadEnvFile();
+            if (!env.TryGetValue("GEMINI_API_KEY", out var geminiKey) || string.IsNullOrEmpty(geminiKey))
+                return Results.BadRequest(new { error = "gemini_key_missing" });
+            ResearchRequest? body;
+            try { body = await req.ReadFromJsonAsync<ResearchRequest>(ct); }
+            catch (Exception ex) { return Results.BadRequest(new { error = "invalid_json", detail = ex.Message }); }
+            if (body is null || string.IsNullOrWhiteSpace(body.Query)) return Results.BadRequest(new { error = "empty_query" });
+            var model = env.TryGetValue("GEMINI_MODEL", out var m) ? m : "gemini-2.5-flash-lite";
+            var svc = new ResearchService(geminiKey, model);
+            try { return Results.Ok(await svc.ResearchAsync(body.Query, ct)); }
+            catch (Exception ex) { return Results.Json(new { error = "research_failed", detail = ex.Message }, statusCode: 500); }
+        });
 
         return app;
     }
@@ -134,6 +149,29 @@ public static class AdminEndpoints
     }
 
     private static string? Str(Dictionary<string, object?> r, string k) => r.TryGetValue(k, out var v) ? v?.ToString() : null;
+    private static Dictionary<string, string> LoadEnvFile()
+    {
+        var dict = new Dictionary<string, string>();
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null)
+        {
+            var p = Path.Combine(dir.FullName, "supabase", ".env.local");
+            if (File.Exists(p))
+            {
+                foreach (var raw in File.ReadAllLines(p))
+                {
+                    var line = raw.Trim();
+                    if (line.Length == 0 || line.StartsWith('#')) continue;
+                    var i = line.IndexOf('=');
+                    if (i < 1) continue;
+                    dict[line[..i].Trim()] = line[(i + 1)..].Trim().Trim('"').Trim('\'');
+                }
+                return dict;
+            }
+            dir = dir.Parent;
+        }
+        return dict;
+    }
     private static string Esc(string? s) => string.IsNullOrEmpty(s) ? "" : System.Net.WebUtility.HtmlEncode(s);
 
     private static bool IsLocalhost(HttpRequest req)
@@ -145,3 +183,6 @@ public static class AdminEndpoints
 
 public sealed record AdminTestRequest(string? SymptomCode, string? MachineLabel);
 public sealed record IdsRequest(List<string>? Ids);
+public sealed record ResearchRequest(string Query);
+public sealed record MachineUpdateRequest(string MachineKey, string? MachineLabel, string? Notes, string? Owner);
+public sealed record AuthAuditRequest(string? MachineKey, string? ModeBefore, string? ModeAfter, string? Note);
