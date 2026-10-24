@@ -19,23 +19,21 @@
       </Grid.ColumnDefinitions>
       <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="12,0,0,0"
                   VerticalAlignment="Center" Spacing="8">
-        <Border Width="20" Height="20" Background="#1f6feb">
+        <Border Width="20" Height="20" CornerRadius="4" Background="#1f6feb">
           <TextBlock Text="Y" Foreground="White" FontWeight="Bold"
                      HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
         </Border>
         <TextBlock Text="YAPAIR" Foreground="#c9d1d9" FontWeight="SemiBold"
                    VerticalAlignment="Center" FontSize="13"/>
-        <TextBlock x:Name="IntentText" Foreground="#8b949e" FontSize="11"
-                   VerticalAlignment="Center" Margin="6,0,0,0"/>
       </StackPanel>
       <Border Grid.Column="1" Background="Transparent"/>
       <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
-        <Button Click="MinBtn_Click" Background="Transparent" BorderThickness="0"
-                Width="46" Height="40" Padding="0">
+        <Button Click="HideBtn_Click" Background="Transparent" BorderThickness="0"
+                Width="46" Height="40" Padding="0" ToolTipService.ToolTip="Tray'e gizle">
           <FontIcon Glyph="&#xE921;" FontSize="10" Foreground="#c9d1d9"/>
         </Button>
         <Button Click="CloseBtn_Click" Background="Transparent" BorderThickness="0"
-                Width="46" Height="40" Padding="0">
+                Width="46" Height="40" Padding="0" ToolTipService.ToolTip="Kapat">
           <FontIcon Glyph="&#xE8BB;" FontSize="10" Foreground="#c9d1d9"/>
         </Button>
       </StackPanel>
@@ -43,23 +41,17 @@
 
     <ListView x:Name="MessagesList" Grid.Row="1" SelectionMode="None"
               Background="Transparent" BorderThickness="0" Padding="12">
-      
       <ListView.ItemTemplate>
         <DataTemplate>
           <Grid Padding="0,4">
-            <Grid.RowDefinitions>
-              <RowDefinition Height="Auto"/>
-              <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="6,0,0,3">
-              <TextBlock Text="{Binding Author}" FontSize="11" FontWeight="SemiBold"
-                         Foreground="{Binding AuthorColor}"/>
-              <TextBlock Text="{Binding TimeDisplay}" FontSize="10" Foreground="#484f58"/>
+            <StackPanel>
+              <TextBlock Text="{Binding Author}" FontSize="11" Foreground="{Binding AuthorColor}"/>
+              <Border Background="{Binding BubbleBg}" CornerRadius="8" Padding="12,8"
+                      MaxWidth="460" HorizontalAlignment="Left">
+                <TextBlock Text="{Binding Text}" Foreground="#c9d1d9" FontSize="13"
+                           TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+              </Border>
             </StackPanel>
-            <Border Grid.Row="1" Background="{Binding BubbleBg}" Padding="12,8" MaxWidth="460" HorizontalAlignment="Left">
-              <TextBlock Text="{Binding Text}" Foreground="#c9d1d9" FontSize="13"
-                         TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
-            </Border>
           </Grid>
         </DataTemplate>
       </ListView.ItemTemplate>
@@ -87,6 +79,23 @@
     <Border Grid.Row="3" Background="#0d1117" BorderBrush="#30363d"
             BorderThickness="0,1,0,0" Padding="12,6">
       <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border x:Name="ModeBadge" Background="#58a6ff" CornerRadius="10"
+                Padding="6,3" VerticalAlignment="Center">
+          <TextBlock x:Name="ModeBadgeText" Text="R0" Foreground="White"
+                     FontSize="10" FontWeight="Bold"/>
+        </Border>
+        <ComboBox x:Name="ModeCombo" Width="150" VerticalAlignment="Center"
+                  SelectionChanged="ModeCombo_SelectionChanged">
+          <ComboBoxItem Content="R0 - Salt Okunur" Tag="0"/>
+          <ComboBoxItem Content="R1 - Onayli" Tag="1"/>
+          <ComboBoxItem Content="R2 - Otomatik" Tag="2"/>
+          <ComboBoxItem Content="R3 - Uzman" Tag="3"/>
+        </ComboBox>
+        <Button Click="CozBtn_Click"
+                Background="#238636" Foreground="White" BorderThickness="0"
+                Padding="10,5">
+          <TextBlock Text="Coz" FontSize="11" FontWeight="SemiBold"/>
+        </Button>
         <Button Click="OtherBtn_Click"
                 Background="#21262d" Foreground="#c9d1d9" BorderBrush="#30363d"
                 BorderThickness="1" Padding="10,5">
@@ -95,7 +104,7 @@
         <Button Click="ClearBtn_Click"
                 Background="#21262d" Foreground="#c9d1d9" BorderBrush="#30363d"
                 BorderThickness="1" Padding="10,5">
-          <TextBlock Text="Sohbeti Temizle" FontSize="11"/>
+          <TextBlock Text="Temizle" FontSize="11"/>
         </Button>
         <TextBlock x:Name="StatusText" Foreground="#484f58" FontSize="10"
                    VerticalAlignment="Center" Margin="8,0,0,0"/>

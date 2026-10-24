@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using WinRT.Interop;
 using Windows.System;
+using Yapair.Core.Playbooks;
 
 namespace Yapair.Desktop.WinUI;
 
@@ -16,6 +17,11 @@ public sealed partial class MainWindow : Window
 {
     private readonly string _repoRoot;
     private readonly string _cliDll;
+    private readonly List<IRepairExecutor> _executors;
+    private readonly List<FindingItem> _lastFindings = new();
+    private AuthorizationMode _mode = AuthorizationMode.ReadOnly;
+    private string? _modeFile;
+
     public ObservableCollection<ChatMessage> Messages { get; } = new();
 
     public MainWindow()
@@ -23,29 +29,35 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         _repoRoot = CliBridge.FindRepoRoot();
         _cliDll = CliBridge.FindCliDll(_repoRoot);
+        _executors = new List<IRepairExecutor> { new SpoolerRestartExecutor() };
+
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBarGrid);
-        MessagesList.ItemsSource = Messages;
 
         try
         {
-            var appWindow = GetAppWindow();
-            appWindow.Resize(new Windows.Graphics.SizeInt32(520, 720));
-            if (appWindow.Presenter is OverlappedPresenter p)
+            var aw = GetAppWindow();
+            aw.Resize(new Windows.Graphics.SizeInt32(520, 720));
+            if (aw.Presenter is OverlappedPresenter p)
             {
                 p.IsResizable = true;
                 p.IsMaximizable = false;
                 p.IsMinimizable = true;
+                p.SetBorderAndTitleBar(false, false);
             }
-            appWindow.Closing += (s, e) =>
-            {
-                e.Cancel = true;
-                HideWindow();
-            };
+            aw.Closing += (s, e) => { e.Cancel = true; HideWindow(); };
         }
         catch { }
 
-        AddBotMessage("Merhaba! Ben YAPAIR. Sorununuzu yazin, sisteminizi tarayip cozum onerileri sunayim.");
+        _modeFile = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "YAPAIR", "authorization-mode.txt");
+        LoadMode();
+        ModeCombo.SelectedIndex = (int)_mode;
+        UpdateModeBadge();
+
+        MessagesList.ItemsSource = Messages;
+        AddBotMessage("Merhaba! Ben YAPAIR. Sorununuzu yazin, sisteminizi tarayip cozum onerileri sunayim. Ornegin: 'bluetooth calismiyor', 'yazici cevrimdisi'.");
     }
 
     private AppWindow GetAppWindow()
@@ -59,20 +71,86 @@ public sealed partial class MainWindow : Window
     public void ShowWindow() { GetAppWindow().Show(); Activate(); }
     public void HideWindow() => GetAppWindow().Hide();
 
-    private void MinBtn_Click(object sender, RoutedEventArgs e)
+    private void HideBtn_Click(object sender, RoutedEventArgs e) => HideWindow();
+    private void CloseBtn_Click(object sender, RoutedEventArgs e) => HideWindow();
+
+    private void LoadMode()
     {
-        if (GetAppWindow().Presenter is OverlappedPresenter p) p.Minimize();
+        try
+        {
+            if (_modeFile != null && File.Exists(_modeFile))
+            {
+                var t = File.ReadAllText(_modeFile).Trim();
+                if (int.TryParse(t, out var v) && v >= 0 && v <= 3) _mode = (AuthorizationMode)v;
+            }
+        }
+        catch { }
     }
 
-    private void CloseBtn_Click(object sender, RoutedEventArgs e) => HideWindow();
+    private void SaveMode()
+    {
+        try
+        {
+            if (_modeFile != null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(_modeFile)!);
+                File.WriteAllText(_modeFile, ((int)_mode).ToString());
+            }
+        }
+        catch { }
+    }
+
+    private async void ModeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ModeCombo.SelectedItem is not ComboBoxItem item) return;
+        if (!int.TryParse(item.Tag?.ToString(), out var tag)) return;
+        var newMode = (AuthorizationMode)tag;
+
+        if (newMode == AuthorizationMode.FullAccess && _mode != AuthorizationMode.FullAccess)
+        {
+            var d = new ContentDialog
+            {
+                Title = "Tam Erisim (R3)",
+                Content = new TextBlock
+                {
+                    Text = "R3 guvenlik azaltan degisikliklere izin verir.\nYetkili uzman misiniz?",
+                    TextWrapping = TextWrapping.Wrap
+                },
+                PrimaryButtonText = "Evet",
+                CloseButtonText = "Vazgec",
+                XamlRoot = Content.XamlRoot
+            };
+            if (await d.ShowAsync() != ContentDialogResult.Primary)
+            {
+                ModeCombo.SelectedIndex = (int)_mode;
+                return;
+            }
+        }
+
+        var oldMode = _mode;
+        _mode = newMode;
+        SaveMode();
+        UpdateModeBadge();
+        await AuditLogger.LogModeChangeAsync(_repoRoot, oldMode.ToString(), _mode.ToString());
+    }
+
+    private void UpdateModeBadge()
+    {
+        var (label, color) = _mode switch
+        {
+            AuthorizationMode.ReadOnly => ("R0", "#58a6ff"),
+            AuthorizationMode.Approved => ("R1", "#d29922"),
+            AuthorizationMode.AutoLowRisk => ("R2", "#3fb950"),
+            AuthorizationMode.FullAccess => ("R3", "#f85149"),
+            _ => ("R0", "#8b949e")
+        };
+        ModeBadgeText.Text = label;
+        ModeBadge.Background = HexBrush(color);
+    }
 
     private void InputBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == VirtualKey.Enter)
-        {
-            SendBtn_Click(sender, e);
-            e.Handled = true;
-        }
+        if (e.Key == VirtualKey.Enter) { SendBtn_Click(sender, e); e.Handled = true; }
     }
 
     private async void SendBtn_Click(object sender, RoutedEventArgs e)
@@ -83,8 +161,9 @@ public sealed partial class MainWindow : Window
 
         AddUserMessage(text);
         var domain = IntentDetector.Detect(text);
-        IntentText.Text = domain is null ? "" : $"Odak: {domain}";
-        StatusText.Text = "TaranÄ±yor...";
+        StatusText.Text = domain is null ? "Taraniyor..." : $"Odak: {domain}";
+
+        _lastFindings.Clear();
 
         try
         {
@@ -96,35 +175,25 @@ public sealed partial class MainWindow : Window
             var findings = string.IsNullOrWhiteSpace(stdout)
                 ? new List<FindingItem>()
                 : ParseFindings(stdout).ToList();
+            _lastFindings.AddRange(findings);
 
             var researchAnswer = await ResearchAsync(text);
-            var botText = BuildBotResponse(findings, researchAnswer);
-            AddBotMessage(botText);
+            AddBotMessage(BuildBotResponse(findings, researchAnswer));
         }
-        catch (Exception ex)
-        {
-            AddBotMessage("Uzgunum, hata: " + ex.Message);
-        }
-        finally
-        {
-            StatusText.Text = "";
-        }
+        catch (Exception ex) { AddBotMessage("Hata: " + ex.Message); }
+        finally { StatusText.Text = ""; }
     }
 
     private string BuildBotResponse(List<FindingItem> findings, string? research)
     {
         var sb = new System.Text.StringBuilder();
-        if (findings.Count == 0)
-        {
-            sb.AppendLine("Yerel taramada bu sorunla ilgili bulgu bulamadim.");
-        }
+        if (findings.Count == 0) sb.AppendLine("Yerel taramada bu sorunla ilgili bulgu bulamadim.");
         else
         {
             sb.AppendLine($"Yerel taramada {findings.Count} ilgili bulgu:");
-            foreach (var f in findings.Take(5))
-                sb.AppendLine($"- [{f.RiskLabel}] {f.Summary}");
-            if (findings.Count > 5)
-                sb.AppendLine($"... ve {findings.Count - 5} bulgu daha (Diger Sorunlar)");
+            foreach (var f in findings.Take(5)) sb.AppendLine($"- [{f.RiskLabel}] {f.Summary}");
+            if (findings.Count > 5) sb.AppendLine($"... ve {findings.Count - 5} bulgu daha. 'Coz' butonuyla tumunu gorup onarabilirsiniz.");
+            else sb.AppendLine("Onarim icin 'Coz' butonuna tiklayin.");
         }
         if (!string.IsNullOrWhiteSpace(research))
         {
@@ -137,6 +206,10 @@ public sealed partial class MainWindow : Window
 
     private async Task<string?> ResearchAsync(string query)
     {
+        if (ResearchCache.TryGetCached(query, out var cached)) return cached;
+        if (!await ResearchCache.WaitIfNeededAsync())
+            return "(Gemini kota siniri asildi. Biraz bekleyin.)";
+
         try
         {
             var env = LoadEnv();
@@ -152,7 +225,9 @@ public sealed partial class MainWindow : Window
             if (!resp.IsSuccessStatusCode) return null;
             var body = await resp.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(body);
-            return doc.RootElement.TryGetProperty("answer", out var a) ? a.GetString() : null;
+            var answer = doc.RootElement.TryGetProperty("answer", out var a) ? a.GetString() : null;
+            if (!string.IsNullOrEmpty(answer)) ResearchCache.Save(query, answer);
+            return answer;
         }
         catch { return null; }
     }
@@ -174,72 +249,192 @@ public sealed partial class MainWindow : Window
     }
 
     private void AddUserMessage(string text) => Messages.Add(new ChatMessage
-    {
-        Author = "Siz", Text = text, IsUser = true,
-        TimeDisplay = DateTime.Now.ToString("HH:mm")
-    });
+    { Author = "Siz", Text = text, IsUser = true });
 
     private void AddBotMessage(string text) => Messages.Add(new ChatMessage
-    {
-        Author = "YAPAIR", Text = text, IsUser = false,
-        TimeDisplay = DateTime.Now.ToString("HH:mm")
-    });
+    { Author = "YAPAIR", Text = text, IsUser = false });
 
     private void ClearBtn_Click(object sender, RoutedEventArgs e)
     {
         Messages.Clear();
+        _lastFindings.Clear();
         AddBotMessage("Sohbet temizlendi.");
+    }
+
+    private async void CozBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (_lastFindings.Count == 0)
+        {
+            AddBotMessage("Once bir sorun yazip tarama yapin, sonra 'Coz' butonuna tiklayin.");
+            return;
+        }
+        await ShowFindingsPopupAsync(_lastFindings.ToList(), "Son Tarama Sonuclari");
     }
 
     private async void OtherBtn_Click(object sender, RoutedEventArgs e) => await ShowOtherIssuesAsync();
 
     public async Task ShowOtherIssuesAsync()
     {
+        StatusText.Text = "Tum sorunlar araniyor...";
         try
         {
-            StatusText.Text = "Tum sorunlar aranÄ±yor...";
             var (exit, stdout, stderr) = await CliBridge.RunAsync(
                 _cliDll, "discover --format json --pretty", TimeSpan.FromSeconds(60));
-            if (string.IsNullOrWhiteSpace(stdout))
-            {
-                AddBotMessage("Tarama cikti uretmedi.");
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(stdout)) { AddBotMessage("Cikti yok"); return; }
             var findings = ParseFindings(stdout).ToList();
-            if (findings.Count == 0)
+            await ShowFindingsPopupAsync(findings, "Tum Sorunlar");
+        }
+        catch (Exception ex) { AddBotMessage("Hata: " + ex.Message); }
+        finally { StatusText.Text = ""; }
+    }
+
+    private async Task ShowFindingsPopupAsync(List<FindingItem> findings, string title)
+    {
+        if (findings.Count == 0) { AddBotMessage("Bulgu yok."); return; }
+
+        var panel = new StackPanel { Spacing = 6 };
+        foreach (var f in findings)
+        {
+            var row = new Grid { Padding = new Thickness(2, 4, 2, 4) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var badge = new Border
             {
-                AddBotMessage("Cihazinizda sorun bulunmadi.");
-                return;
-            }
-            var panel = new StackPanel { Spacing = 4 };
-            foreach (var f in findings)
+                Background = HexBrush(f.RiskBg),
+                CornerRadius = new CornerRadius(10),
+                Padding = new Thickness(6, 2, 6, 2),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 10, 0)
+            };
+            badge.Child = new TextBlock
             {
-                var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Padding = new Thickness(2, 4, 2, 4) };
-                row.Children.Add(new Border
+                Text = f.RiskLabel,
+                Foreground = HexBrush(f.RiskFg),
+                FontSize = 10,
+                FontWeight = Microsoft.UI.Text.FontWeights.Bold
+            };
+            Grid.SetColumn(badge, 0);
+            row.Children.Add(badge);
+
+            var info = new StackPanel();
+            info.Children.Add(new TextBlock
+            {
+                Text = f.Summary,
+                Foreground = HexBrush("#c9d1d9"),
+                TextWrapping = TextWrapping.Wrap,
+                FontSize = 12,
+                MaxWidth = 360
+            });
+            info.Children.Add(new TextBlock
+            {
+                Text = f.PlaybookText,
+                Foreground = HexBrush("#484f58"),
+                FontSize = 10
+            });
+            Grid.SetColumn(info, 1);
+            row.Children.Add(info);
+
+            var fixBtn = new Button
+            {
+                Content = "Duzelt",
+                Padding = new Thickness(10, 4, 10, 4),
+                Background = HexBrush("#238636"),
+                Foreground = new SolidColorBrush(Microsoft.UI.Colors.White),
+                BorderThickness = new Thickness(0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(8, 0, 0, 0)
+            };
+            var capturedFinding = f;
+            fixBtn.Click += async (s, ev) => await OnFixAsync(capturedFinding);
+            Grid.SetColumn(fixBtn, 2);
+            row.Children.Add(fixBtn);
+
+            panel.Children.Add(row);
+        }
+
+        var dialog = new ContentDialog
+        {
+            Title = $"{title} ({findings.Count})",
+            Content = new ScrollViewer { Content = panel, MaxHeight = 460 },
+            CloseButtonText = "Kapat",
+            XamlRoot = Content.XamlRoot
+        };
+        await dialog.ShowAsync();
+    }
+
+    private async Task OnFixAsync(FindingItem f)
+    {
+        var playbookId = f.PlaybookText.Replace("Playbook: ", "").Trim();
+        var executor = _executors.FirstOrDefault(x => x.PlaybookId == playbookId);
+
+        if (executor is null)
+        {
+            var d = new ContentDialog
+            {
+                Title = "Yurutucu yok",
+                Content = new TextBlock
                 {
-                    Background = HexBrush(f.RiskBg),
-                    CornerRadius = new CornerRadius(10),
-                    Padding = new Thickness(6, 2, 6, 2),
-                    VerticalAlignment = VerticalAlignment.Center,
-                    Child = new TextBlock { Text = f.RiskLabel, Foreground = HexBrush(f.RiskFg), FontSize = 10, FontWeight = Microsoft.UI.Text.FontWeights.Bold }
-                });
-                row.Children.Add(new TextBlock { Text = f.Summary, Foreground = HexBrush("#c9d1d9"), TextWrapping = TextWrapping.Wrap, FontSize = 12, MaxWidth = 380 });
-                panel.Children.Add(row);
-            }
-            var scroll = new ScrollViewer { Content = panel, MaxHeight = 420 };
-            var dialog = new ContentDialog
-            {
-                Title = $"Cihazinizdaki Sorunlar ({findings.Count})",
-                Content = scroll,
-                CloseButtonText = "Kapat",
+                    Text = $"'{playbookId}' icin henuz otomatik yurutucu eklenmedi.",
+                    TextWrapping = TextWrapping.Wrap
+                },
+                CloseButtonText = "Tamam",
                 XamlRoot = Content.XamlRoot
             };
-            await dialog.ShowAsync();
+            await d.ShowAsync();
+            return;
         }
-        catch (Exception ex)
+
+        var requiredMode = executor.Risk switch
         {
-            AddBotMessage("Sorunlar yuklenemedi: " + ex.Message);
+            RiskLevel.R0 => AuthorizationMode.ReadOnly,
+            RiskLevel.R1 => AuthorizationMode.Approved,
+            RiskLevel.R2 => AuthorizationMode.AutoLowRisk,
+            RiskLevel.R3 => AuthorizationMode.FullAccess,
+            _ => AuthorizationMode.FullAccess
+        };
+
+        if (_mode < requiredMode)
+        {
+            var warn = new ContentDialog
+            {
+                Title = "Yetki yetersiz",
+                Content = new TextBlock
+                {
+                    Text = $"Bu islem {executor.Risk} seviyesinde.\nMevcut mod: {_mode}.\nLutfen yetki modunu yukseltin.",
+                    TextWrapping = TextWrapping.Wrap
+                },
+                CloseButtonText = "Tamam",
+                XamlRoot = Content.XamlRoot
+            };
+            await warn.ShowAsync();
+            return;
         }
+
+        var confirm = new ContentDialog
+        {
+            Title = $"Onarim Onayi - {executor.Risk}",
+            Content = new TextBlock
+            {
+                Text = $"Playbook: {executor.PlaybookId}\nRisk: {executor.Risk}\nYetki modu: {_mode}\n\nUygulansin mi?",
+                TextWrapping = TextWrapping.Wrap
+            },
+            PrimaryButtonText = "Onayla",
+            CloseButtonText = "Vazgec",
+            XamlRoot = Content.XamlRoot
+        };
+        if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+
+        StatusText.Text = "Onarim uygulaniyor...";
+        try
+        {
+            var result = await executor.ExecuteAsync();
+            AddBotMessage(result.Success
+                ? $"Onarim basarili: {result.Message}"
+                : $"Onarim basarisiz: {result.Message}");
+        }
+        catch (Exception ex) { AddBotMessage("Onarim hatasi: " + ex.Message); }
         finally { StatusText.Text = ""; }
     }
 
@@ -259,19 +454,18 @@ public sealed partial class MainWindow : Window
         try
         {
             using var doc = JsonDocument.Parse(json);
-            if (!TryGetArray(doc.RootElement, out var arr, "findings", "Findings", "issues", "Issues"))
-                return list;
+            if (!TryGetArray(doc.RootElement, out var arr, "findings", "Findings")) return list;
             foreach (var item in arr.EnumerateArray())
             {
-                var playbookId = GetStr(item, "playbook_id", "PlaybookId");
-                var severity = GetStr(item, "severity", "Severity") ?? "info";
-                var (riskLabel, riskBg, riskFg) = RiskBadge(playbookId, severity);
+                var pid = GetStr(item, "playbook_id", "PlaybookId");
+                var sev = GetStr(item, "severity", "Severity") ?? "info";
+                var (rl, rb, rf) = RiskBadge(pid, sev);
                 list.Add(new FindingItem
                 {
-                    Severity = severity,
+                    Severity = sev,
                     Summary = GetStr(item, "summary", "Summary") ?? "-",
-                    PlaybookText = playbookId is null ? "Playbook: yok" : "Playbook: " + playbookId,
-                    RiskLabel = riskLabel, RiskBg = riskBg, RiskFg = riskFg
+                    PlaybookText = pid is null ? "Playbook: yok" : "Playbook: " + pid,
+                    RiskLabel = rl, RiskBg = rb, RiskFg = rf
                 });
             }
         }
@@ -279,12 +473,11 @@ public sealed partial class MainWindow : Window
         return list;
     }
 
-    private static (string, string, string) RiskBadge(string? playbookId, string severity)
+    private static (string, string, string) RiskBadge(string? pid, string sev)
     {
-        if (playbookId is null)
-            return severity == "critical" ? ("R3", "#2a0d0d", "#f85149") : ("R0", "#21262d", "#8b949e");
-        if (playbookId.StartsWith("security.")) return ("R3", "#2a0d0d", "#f85149");
-        if (playbookId.StartsWith("devices.driver.") || playbookId.StartsWith("network.")) return ("R2", "#2a1f0d", "#d29922");
+        if (pid is null) return sev == "critical" ? ("R3", "#2a0d0d", "#f85149") : ("R0", "#21262d", "#8b949e");
+        if (pid.StartsWith("security.")) return ("R3", "#2a0d0d", "#f85149");
+        if (pid.StartsWith("devices.") || pid.StartsWith("network.")) return ("R2", "#2a1f0d", "#d29922");
         return ("R1", "#0d2a14", "#3fb950");
     }
 
