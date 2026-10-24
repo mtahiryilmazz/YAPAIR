@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -16,4 +16,7 @@
     <ProjectReference Include="..\Yapair.Storage\Yapair.Storage.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Yapair.Sync\Yapair.Sync.csproj" />
+  </ItemGroup>
 </Project>

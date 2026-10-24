@@ -1,0 +1,63 @@
+﻿$p = "src\Yapair.Api\AdminEndpoints.cs"
+$c = Get-Content -LiteralPath $p -Raw
+
+# Yeni route'lari "return app;" oncesine ekle
+$newRoutes = @'
+
+        app.MapGet("/admin/machine/{key}", async (HttpRequest req, SupabaseClient sb, string key, CancellationToken ct) =>
+        {
+            if (!IsLocalhost(req)) return Results.Unauthorized();
+            try
+            {
+                var row = await sb.GetMachineAsync(key, ct);
+                return row is null ? Results.NotFound(new { error = "not_found" }) : Results.Ok(row);
+            }
+            catch (Exception ex) { return Results.Json(new { error = "machine_detail_failed", detail = ex.Message }, statusCode: 500); }
+        });
+
+        app.MapPost("/admin/machines/update", async (HttpRequest req, SupabaseClient sb, CancellationToken ct) =>
+        {
+            if (!IsLocalhost(req)) return Results.Unauthorized();
+            MachineUpdateRequest? body;
+            try { body = await req.ReadFromJsonAsync<MachineUpdateRequest>(ct); }
+            catch (Exception ex) { return Results.BadRequest(new { error = "invalid_json", detail = ex.Message }); }
+            if (body is null || string.IsNullOrEmpty(body.MachineKey))
+                return Results.BadRequest(new { error = "missing_machine_key" });
+            try
+            {
+                await sb.UpdateMachineAsync(body.MachineKey, body.MachineLabel, body.Notes, body.Owner, ct);
+                return Results.Ok(new { status = "ok" });
+            }
+            catch (Exception ex) { return Results.Json(new { error = "update_failed", detail = ex.Message }, statusCode: 500); }
+        });
+
+        app.MapPost("/admin/machines/delete", async (HttpRequest req, SupabaseClient sb, CancellationToken ct) =>
+        {
+            if (!IsLocalhost(req)) return Results.Unauthorized();
+            return await HandleIdsAction(req, ids => sb.DeleteMachinesAsync(ids, ct), "deleted");
+        });
+
+        app.MapPost("/admin/batches/delete", async (HttpRequest req, SupabaseClient sb, CancellationToken ct) =>
+        {
+            if (!IsLocalhost(req)) return Results.Unauthorized();
+            return await HandleIdsAction(req, ids => sb.DeleteBatchesAsync(ids, ct), "deleted");
+        });
+'@
+
+if ($c -notmatch 'admin/machine/\{key\}') {
+    $c = $c -replace '(\s+return app;)', ($newRoutes + '$1')
+}
+
+# MachineUpdateRequest record
+if ($c -notmatch 'MachineUpdateRequest') {
+    $c = $c -replace 'public sealed record IdsRequest\(List<string>\? Ids\);',
+        "public sealed record IdsRequest(List<string>? Ids);`r`npublic sealed record MachineUpdateRequest(string MachineKey, string? MachineLabel, string? Notes, string? Owner);"
+}
+
+Set-Content -LiteralPath $p -Value $c -Encoding UTF8 -NoNewline
+""
+"machine/{key}      : " + ((Select-String -Path $p -Pattern 'admin/machine/\{key\}').Count -gt 0)
+"machines/update    : " + ((Select-String -Path $p -Pattern 'admin/machines/update').Count -gt 0)
+"machines/delete    : " + ((Select-String -Path $p -Pattern 'admin/machines/delete').Count -gt 0)
+"batches/delete     : " + ((Select-String -Path $p -Pattern 'admin/batches/delete').Count -gt 0)
+"MachineUpdateReq   : " + ((Select-String -Path $p -Pattern 'MachineUpdateRequest').Count -gt 0)
