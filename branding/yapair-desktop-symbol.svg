@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>YAPAIR Desktop Assistant</title>
+  <!-- Dark modern tile container -->
+  <rect width="256" height="256" rx="56" fill="#0b0f19"/>
+  
+  <!-- Subtle background ring -->
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#1e293b" stroke-width="22"/>
+  
+  <!-- Electric Cyan Healing Orbit (Son kullanıcı dostu, aktif yardım halkası) -->
+  <path d="M 128 52 A 76 76 0 1 1 52 128" fill="none" stroke="#00f2fe" stroke-width="22" stroke-linecap="round"/>
+  
+  <!-- Center White Y Assistant Node -->
+  <path d="M 96 98 L 128 132 L 160 98 M 128 132 L 128 168" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- AI Agent Spark / User Help Status Beacon -->
+  <circle cx="128" cy="52" r="14" fill="#38bdf8"/>
+  <circle cx="128" cy="52" r="7" fill="#ffffff"/>
+  
+  <!-- Distinctive Assistant Accent: Friendly Shield/Check Sparkle at Bottom Right -->
+  <circle cx="188" cy="188" r="28" fill="#0b0f19" stroke="#38bdf8" stroke-width="4"/>
+  <path d="M 180 188 L 186 194 L 198 182" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

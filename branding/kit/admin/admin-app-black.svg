@@ -1,0 +1,24 @@
+<svg fill="#000000" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><title>YAPAIR Admin</title>
+  
+  <!-- Dark modern tile container -->
+  <rect width="256" height="256" rx="56" fill="#000000"/>
+  
+  <!-- Subtle background ring -->
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#000000" stroke-width="22"/>
+  
+  <!-- Purple & Amber/Gold Executive Orbit (Yönetim, Güvenlik, Çoklu Onay) -->
+  <path d="M 128 52 A 76 76 0 1 1 52 128" fill="none" stroke="#000000" stroke-width="22" stroke-linecap="round"/>
+  
+  <!-- Center White Y Control Node -->
+  <path d="M 96 98 L 128 132 L 160 98 M 128 132 L 128 168" fill="none" stroke="#000000" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Admin Control Beacon -->
+  <circle cx="128" cy="52" r="14" fill="#000000"/>
+  <circle cx="128" cy="52" r="7" fill="#000000"/>
+  
+  <!-- Distinctive Admin Accent: Command Shield / Key at Bottom Right -->
+  <circle cx="188" cy="188" r="28" fill="#000000" stroke="#000000" stroke-width="4"/>
+  <!-- Key / Security Emblem -->
+  <circle cx="184" cy="184" r="5" fill="none" stroke="#000000" stroke-width="3"/>
+  <path d="M 188 188 L 195 195 M 192 192 L 195 189" fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round"/>
+</svg>

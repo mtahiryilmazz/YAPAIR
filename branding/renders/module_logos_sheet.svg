@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="810" viewBox="0 0 1600 810"><rect width="1600" height="810" fill="#f7f7f4"/><text x="60" y="78" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="40" font-weight="700" fill="#161616">Logo concepts</text><text x="60" y="116" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="20" fill="#6b6b6b">Concepts for review — pick a direction (or tell me what you like in each).</text><rect x="60" y="150" width="726" height="600" rx="18" fill="#fff" stroke="#e4e4e0" stroke-width="1"/><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="90" y="190" width="666" height="300" preserveAspectRatio="xMidYMid meet">
+  <title>YAPAIR Desktop Assistant</title>
+  <!-- Dark modern tile container -->
+  <rect width="256" height="256" rx="56" fill="#0b0f19"/>
+  
+  <!-- Subtle background ring -->
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#1e293b" stroke-width="22"/>
+  
+  <!-- Electric Cyan Healing Orbit (Son kullanıcı dostu, aktif yardım halkası) -->
+  <path d="M 128 52 A 76 76 0 1 1 52 128" fill="none" stroke="#00f2fe" stroke-width="22" stroke-linecap="round"/>
+  
+  <!-- Center White Y Assistant Node -->
+  <path d="M 96 98 L 128 132 L 160 98 M 128 132 L 128 168" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- AI Agent Spark / User Help Status Beacon -->
+  <circle cx="128" cy="52" r="14" fill="#38bdf8"/>
+  <circle cx="128" cy="52" r="7" fill="#ffffff"/>
+  
+  <!-- Distinctive Assistant Accent: Friendly Shield/Check Sparkle at Bottom Right -->
+  <circle cx="188" cy="188" r="28" fill="#0b0f19" stroke="#38bdf8" stroke-width="4"/>
+  <path d="M 180 188 L 186 194 L 198 182" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</g><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="90" y="516" width="64" height="64" preserveAspectRatio="xMidYMid meet">
+  <title>YAPAIR Desktop Assistant</title>
+  <!-- Dark modern tile container -->
+  <rect width="256" height="256" rx="56" fill="#0b0f19"/>
+  
+  <!-- Subtle background ring -->
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#1e293b" stroke-width="22"/>
+  
+  <!-- Electric Cyan Healing Orbit (Son kullanıcı dostu, aktif yardım halkası) -->
+  <path d="M 128 52 A 76 76 0 1 1 52 128" fill="none" stroke="#00f2fe" stroke-width="22" stroke-linecap="round"/>
+  
+  <!-- Center White Y Assistant Node -->
+  <path d="M 96 98 L 128 132 L 160 98 M 128 132 L 128 168" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- AI Agent Spark / User Help Status Beacon -->
+  <circle cx="128" cy="52" r="14" fill="#38bdf8"/>
+  <circle cx="128" cy="52" r="7" fill="#ffffff"/>
+  
+  <!-- Distinctive Assistant Accent: Friendly Shield/Check Sparkle at Bottom Right -->
+  <circle cx="188" cy="188" r="28" fill="#0b0f19" stroke="#38bdf8" stroke-width="4"/>
+  <path d="M 180 188 L 186 194 L 198 182" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</g><text x="122" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">64px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="180" y="548" width="32" height="32" preserveAspectRatio="xMidYMid meet">
+  <title>YAPAIR Desktop Assistant</title>
+  <!-- Dark modern tile container -->
+  <rect width="256" height="256" rx="56" fill="#0b0f19"/>
+  
+  <!-- Subtle background ring -->
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#1e293b" stroke-width="22"/>
+  
+  <!-- Electric Cyan Healing Orbit (Son kullanıcı dostu, aktif yardım halkası) -->
+  <path d="M 128 52 A 76 76 0 1 1 52 128" fill="none" stroke="#00f2fe" stroke-width="22" stroke-linecap="round"/>
+  
+  <!-- Center White Y Assistant Node -->
+  <path d="M 96 98 L 128 132 L 160 98 M 128 132 L 128 168" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- AI Agent Spark / User Help Status Beacon -->
+  <circle cx="128" cy="52" r="14" fill="#38bdf8"/>
+  <circle cx="128" cy="52" r="7" fill="#ffffff"/>
+  
+  <!-- Distinctive Assistant Accent: Friendly Shield/Check Sparkle at Bottom Right -->
+  <circle cx="188" cy="188" r="28" fill="#0b0f19" stroke="#38bdf8" stroke-width="4"/>
+  <path d="M 180 188 L 186 194 L 198 182" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</g><text x="196" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">32px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="238" y="564" width="16" height="16" preserveAspectRatio="xMidYMid meet">
+  <title>YAPAIR Desktop Assistant</title>
+  <!-- Dark modern tile container -->
+  <rect width="256" height="256" rx="56" fill="#0b0f19"/>
+  
+  <!-- Subtle background ring -->
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#1e293b" stroke-width="22"/>
+  
+  <!-- Electric Cyan Healing Orbit (Son kullanıcı dostu, aktif yardım halkası) -->
+  <path d="M 128 52 A 76 76 0 1 1 52 128" fill="none" stroke="#00f2fe" stroke-width="22" stroke-linecap="round"/>
+  
+  <!-- Center White Y Assistant Node -->
+  <path d="M 96 98 L 128 132 L 160 98 M 128 132 L 128 168" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- AI Agent Spark / User Help Status Beacon -->
+  <circle cx="128" cy="52" r="14" fill="#38bdf8"/>
+  <circle cx="128" cy="52" r="7" fill="#ffffff"/>
+  
+  <!-- Distinctive Assistant Accent: Friendly Shield/Check Sparkle at Bottom Right -->
+  <circle cx="188" cy="188" r="28" fill="#0b0f19" stroke="#38bdf8" stroke-width="4"/>
+  <path d="M 180 188 L 186 194 L 198 182" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</g><text x="246" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">16px</text><text x="90.0" y="636" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" font-weight="700" fill="#161616">A · YAPAIR Desktop (Assistant)</text><text x="90.0" y="670" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">Cyan orbit with check beacon for user repair</text><rect x="814" y="150" width="726" height="600" rx="18" fill="#fff" stroke="#e4e4e0" stroke-width="1"/><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="844" y="190" width="666" height="300" preserveAspectRatio="xMidYMid meet">
+  <title>YAPAIR Admin Console</title>
+  <!-- Dark modern tile container -->
+  <rect width="256" height="256" rx="56" fill="#0b0f19"/>
+  
+  <!-- Subtle background ring -->
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#1e293b" stroke-width="22"/>
+  
+  <!-- Purple & Amber/Gold Executive Orbit (Yönetim, Güvenlik, Çoklu Onay) -->
+  <path d="M 128 52 A 76 76 0 1 1 52 128" fill="none" stroke="#a855f7" stroke-width="22" stroke-linecap="round"/>
+  
+  <!-- Center White Y Control Node -->
+  <path d="M 96 98 L 128 132 L 160 98 M 128 132 L 128 168" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Admin Control Beacon -->
+  <circle cx="128" cy="52" r="14" fill="#ec4899"/>
+  <circle cx="128" cy="52" r="7" fill="#ffffff"/>
+  
+  <!-- Distinctive Admin Accent: Command Shield / Key at Bottom Right -->
+  <circle cx="188" cy="188" r="28" fill="#0b0f19" stroke="#a855f7" stroke-width="4"/>
+  <!-- Key / Security Emblem -->
+  <circle cx="184" cy="184" r="5" fill="none" stroke="#f59e0b" stroke-width="3"/>
+  <path d="M 188 188 L 195 195 M 192 192 L 195 189" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+</svg>
+</g><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="844" y="516" width="64" height="64" preserveAspectRatio="xMidYMid meet">
+  <title>YAPAIR Admin Console</title>
+  <!-- Dark modern tile container -->
+  <rect width="256" height="256" rx="56" fill="#0b0f19"/>
+  
+  <!-- Subtle background ring -->
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#1e293b" stroke-width="22"/>
+  
+  <!-- Purple & Amber/Gold Executive Orbit (Yönetim, Güvenlik, Çoklu Onay) -->
+  <path d="M 128 52 A 76 76 0 1 1 52 128" fill="none" stroke="#a855f7" stroke-width="22" stroke-linecap="round"/>
+  
+  <!-- Center White Y Control Node -->
+  <path d="M 96 98 L 128 132 L 160 98 M 128 132 L 128 168" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Admin Control Beacon -->
+  <circle cx="128" cy="52" r="14" fill="#ec4899"/>
+  <circle cx="128" cy="52" r="7" fill="#ffffff"/>
+  
+  <!-- Distinctive Admin Accent: Command Shield / Key at Bottom Right -->
+  <circle cx="188" cy="188" r="28" fill="#0b0f19" stroke="#a855f7" stroke-width="4"/>
+  <!-- Key / Security Emblem -->
+  <circle cx="184" cy="184" r="5" fill="none" stroke="#f59e0b" stroke-width="3"/>
+  <path d="M 188 188 L 195 195 M 192 192 L 195 189" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+</svg>
+</g><text x="876" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">64px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="934" y="548" width="32" height="32" preserveAspectRatio="xMidYMid meet">
+  <title>YAPAIR Admin Console</title>
+  <!-- Dark modern tile container -->
+  <rect width="256" height="256" rx="56" fill="#0b0f19"/>
+  
+  <!-- Subtle background ring -->
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#1e293b" stroke-width="22"/>
+  
+  <!-- Purple & Amber/Gold Executive Orbit (Yönetim, Güvenlik, Çoklu Onay) -->
+  <path d="M 128 52 A 76 76 0 1 1 52 128" fill="none" stroke="#a855f7" stroke-width="22" stroke-linecap="round"/>
+  
+  <!-- Center White Y Control Node -->
+  <path d="M 96 98 L 128 132 L 160 98 M 128 132 L 128 168" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Admin Control Beacon -->
+  <circle cx="128" cy="52" r="14" fill="#ec4899"/>
+  <circle cx="128" cy="52" r="7" fill="#ffffff"/>
+  
+  <!-- Distinctive Admin Accent: Command Shield / Key at Bottom Right -->
+  <circle cx="188" cy="188" r="28" fill="#0b0f19" stroke="#a855f7" stroke-width="4"/>
+  <!-- Key / Security Emblem -->
+  <circle cx="184" cy="184" r="5" fill="none" stroke="#f59e0b" stroke-width="3"/>
+  <path d="M 188 188 L 195 195 M 192 192 L 195 189" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+</svg>
+</g><text x="950" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">32px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="992" y="564" width="16" height="16" preserveAspectRatio="xMidYMid meet">
+  <title>YAPAIR Admin Console</title>
+  <!-- Dark modern tile container -->
+  <rect width="256" height="256" rx="56" fill="#0b0f19"/>
+  
+  <!-- Subtle background ring -->
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#1e293b" stroke-width="22"/>
+  
+  <!-- Purple & Amber/Gold Executive Orbit (Yönetim, Güvenlik, Çoklu Onay) -->
+  <path d="M 128 52 A 76 76 0 1 1 52 128" fill="none" stroke="#a855f7" stroke-width="22" stroke-linecap="round"/>
+  
+  <!-- Center White Y Control Node -->
+  <path d="M 96 98 L 128 132 L 160 98 M 128 132 L 128 168" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Admin Control Beacon -->
+  <circle cx="128" cy="52" r="14" fill="#ec4899"/>
+  <circle cx="128" cy="52" r="7" fill="#ffffff"/>
+  
+  <!-- Distinctive Admin Accent: Command Shield / Key at Bottom Right -->
+  <circle cx="188" cy="188" r="28" fill="#0b0f19" stroke="#a855f7" stroke-width="4"/>
+  <!-- Key / Security Emblem -->
+  <circle cx="184" cy="184" r="5" fill="none" stroke="#f59e0b" stroke-width="3"/>
+  <path d="M 188 188 L 195 195 M 192 192 L 195 189" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+</svg>
+</g><text x="1000" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">16px</text><text x="844.0" y="636" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" font-weight="700" fill="#161616">B · YAPAIR Admin (Control Center)</text><text x="844.0" y="670" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">Purple/Gold orbit with security badge for IT ops</text></svg>
