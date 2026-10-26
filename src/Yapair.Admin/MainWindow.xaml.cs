@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using Microsoft.UI;
+using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -35,6 +36,8 @@ public sealed partial class MainWindow : Window
             if (AppWindowTitleBar.IsCustomizationSupported())
             {
                 var titleBar = aw.TitleBar;
+                // 48px başlık çubuğu ile sistem butonlarının yüksekliği eşleşsin
+                titleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
                 titleBar.ButtonBackgroundColor = Windows.UI.Color.FromArgb(0, 0, 0, 0);
                 titleBar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 201, 209, 217);
                 titleBar.ButtonHoverBackgroundColor = Windows.UI.Color.FromArgb(40, 255, 255, 255);
@@ -47,7 +50,11 @@ public sealed partial class MainWindow : Window
         }
         catch { }
 
-        UpdateServerStatus();
+        // Başlık çubuğu içindeki tıklanabilir öğeleri sürükleme alanından hariç tut
+        TitleBarGrid.Loaded += (_, _) => UpdateTitleBarRegions();
+        TitleBarGrid.SizeChanged += (_, _) => UpdateTitleBarRegions();
+        ApiStatusBadge.SizeChanged += (_, _) => UpdateTitleBarRegions();
+        TitleBarActions.SizeChanged += (_, _) => UpdateTitleBarRegions();
 
         _notificationService.OnNewHelpRequest += (req) =>
         {
@@ -98,6 +105,35 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void UpdateTitleBarRegions()
+    {
+        try
+        {
+            if (TitleBarGrid.XamlRoot == null) return;
+            var aw = GetAppWindow();
+            var scale = TitleBarGrid.XamlRoot.RasterizationScale;
+
+            // Sistem butonlarının gerçek genişliği kadar boşluk bırak
+            if (aw.TitleBar.RightInset > 0)
+                CaptionButtonsColumn.Width = new GridLength(aw.TitleBar.RightInset / scale);
+
+            var rects = new List<Windows.Graphics.RectInt32>();
+            foreach (FrameworkElement el in new FrameworkElement[] { ApiStatusBadge, TitleBarActions })
+            {
+                if (el.ActualWidth <= 0) continue;
+                var b = el.TransformToVisual(null).TransformBounds(
+                    new Windows.Foundation.Rect(0, 0, el.ActualWidth, el.ActualHeight));
+                rects.Add(new Windows.Graphics.RectInt32(
+                    (int)Math.Round(b.X * scale), (int)Math.Round(b.Y * scale),
+                    (int)Math.Round(b.Width * scale), (int)Math.Round(b.Height * scale)));
+            }
+
+            InputNonClientPointerSource.GetForWindowId(aw.Id)
+                .SetRegionRects(NonClientRegionKind.Passthrough, rects.ToArray());
+        }
+        catch { }
+    }
+
     private async void CheckApiHealthAsync()
     {
         var health = await _api.GetHealthAsync();
@@ -110,13 +146,15 @@ public sealed partial class MainWindow : Window
             ApiStatusBadge.BorderBrush = HexBrush("#238636");
             ApiStatusText.Text = $"API: {modeLabel}";
             ApiStatusText.Foreground = HexBrush("#3fb950");
+            StatusDot.Fill = HexBrush("#3fb950");
         }
         else
         {
             ApiStatusBadge.Background = HexBrush("#2a0d0d");
             ApiStatusBadge.BorderBrush = HexBrush("#da3633");
-            ApiStatusText.Text = "API: Çevrimdışı";
+            ApiStatusText.Text = EmbeddedApiServer.IsRunning ? "API: Çevrimdışı" : "API: Sunucu Durduruldu";
             ApiStatusText.Foreground = HexBrush("#f85149");
+            StatusDot.Fill = HexBrush("#f85149");
         }
     }
 
@@ -170,17 +208,9 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void UpdateServerStatus()
-    {
-        var running = EmbeddedApiServer.IsRunning;
-        ServerDot.Background = HexBrush(running ? "#3fb950" : "#f85149");
-        ServerMenuLabel.Text = running ? "Sunucu: 5080 (Aktif)" : "Sunucu: Durduruldu";
-    }
-
     private async void StartServer_Click(object sender, RoutedEventArgs e)
     {
         await EmbeddedApiServer.StartAsync();
-        UpdateServerStatus();
         CheckApiHealthAsync();
         ShowNotification("Sunucu Başlatıldı", "Yerel API sunucusu Port 5080 üzerinden çalışıyor.");
     }
@@ -188,7 +218,6 @@ public sealed partial class MainWindow : Window
     private async void StopServer_Click(object sender, RoutedEventArgs e)
     {
         await EmbeddedApiServer.StopAsync();
-        UpdateServerStatus();
         CheckApiHealthAsync();
         ShowNotification("Sunucu Durduruldu", "Yerel API sunucusu kapatıldı.");
     }
@@ -196,7 +225,6 @@ public sealed partial class MainWindow : Window
     private async void RestartServer_Click(object sender, RoutedEventArgs e)
     {
         await EmbeddedApiServer.RestartAsync();
-        UpdateServerStatus();
         CheckApiHealthAsync();
         ShowNotification("Sunucu Yeniden Başlatıldı", "Port 5080 üzerinden servis yeniden aktif.");
     }
