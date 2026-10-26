@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.Json;
 using Microsoft.UI;
@@ -7,6 +7,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using System.Net.Http;
+using System.Net.Http.Json;
 using WinRT.Interop;
 using Windows.System;
 using Yapair.Core.Playbooks;
@@ -21,6 +23,11 @@ public sealed partial class MainWindow : Window
     private readonly List<FindingItem> _lastFindings = new();
     private AuthorizationMode _mode = AuthorizationMode.ReadOnly;
     private string? _modeFile;
+    private string? _posFile;
+    private bool _isPinned;
+    public bool IsExplicitExit { get; set; } = false;
+    private bool _updatingModeCombo;
+    private DispatcherTimer? _repairPollTimer;
 
     public ObservableCollection<ChatMessage> Messages { get; } = new();
 
@@ -29,23 +36,41 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         _repoRoot = CliBridge.FindRepoRoot();
         _cliDll = CliBridge.FindCliDll(_repoRoot);
-        _executors = new List<IRepairExecutor> { new SpoolerRestartExecutor() };
+        _executors = new List<IRepairExecutor>
+        {
+            new SpoolerRestartExecutor(),
+            new AudioRestartExecutor(),
+            new PrinterQueueClearExecutor(),
+            new ServicesControlledRestartExecutor(),
+            new NetworkAdapterResetExecutor()
+        };
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBarGrid);
 
+        _posFile = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "YAPAIR", "window-pos.json");
+
         try
         {
             var aw = GetAppWindow();
-            aw.Resize(new Windows.Graphics.SizeInt32(520, 720));
-            if (aw.Presenter is OverlappedPresenter p)
+            ConfigureWindow(aw);
+            aw.Closing += (s, e) =>
             {
-                p.IsResizable = true;
-                p.IsMaximizable = false;
-                p.IsMinimizable = true;
-                p.SetBorderAndTitleBar(false, false);
-            }
-            aw.Closing += (s, e) => { e.Cancel = true; HideWindow(); };
+                if (!IsExplicitExit)
+                {
+                    e.Cancel = true;
+                    HideWindow();
+                }
+            };
+            aw.Changed += (s, e) =>
+            {
+                if (e.DidPositionChange || e.DidSizeChange)
+                {
+                    SaveWindowPos(aw);
+                }
+            };
         }
         catch { }
 
@@ -54,6 +79,7 @@ public sealed partial class MainWindow : Window
             "YAPAIR", "authorization-mode.txt");
         LoadMode();
         UpdateModeBadge();
+        StartRemoteRepairPolling();
 
         MessagesList.ItemsSource = Messages;
         AddBotMessage("Merhaba! Ben YAPAIR. Sorununuzu yazin, sisteminizi tarayip cozum onerileri sunayim. Ornegin: 'bluetooth calismiyor', 'yazici cevrimdisi'.");
@@ -93,6 +119,7 @@ public sealed partial class MainWindow : Window
         modeCombo.Items.Add(new ComboBoxItem { Content = "R1 - Onayli", Tag = "1" });
         modeCombo.Items.Add(new ComboBoxItem { Content = "R2 - Otomatik", Tag = "2" });
         modeCombo.Items.Add(new ComboBoxItem { Content = "R3 - Uzman", Tag = "3" });
+        modeCombo.SelectedIndex = (int)_mode;
         panel.Children.Add(modeCombo);
 
         // -- Servis --
@@ -181,16 +208,101 @@ public sealed partial class MainWindow : Window
             if (modeCombo.SelectedItem is ComboBoxItem item && int.TryParse(item.Tag?.ToString(), out var tag))
             {
                 var newMode = (AuthorizationMode)tag;
-                if (newMode == AuthorizationMode.FullAccess && _mode != AuthorizationMode.FullAccess)
+                if ((newMode == AuthorizationMode.AutoLowRisk || newMode == AuthorizationMode.FullAccess) && _mode != newMode)
                 {
+                    var pinBox = new TextBox { PlaceholderText = "6 haneli onay kodu (PIN)...", MaxLength = 6 };
+                    var requestBtn = new Button { Content = "Onay Kodu Talep Et", FontSize = 12 };
+                    var statusBlockText = new TextBlock { FontSize = 11, Foreground = HexBrush("#8b949e") };
+
+                    requestBtn.Click += async (s, ev) =>
+                    {
+                        requestBtn.IsEnabled = false;
+                        statusBlockText.Text = "Onay talebi gönderiliyor...";
+                        try
+                        {
+                            using var client = new HttpClient { BaseAddress = new Uri("http://localhost:5080/") };
+                            var modeStr = newMode == AuthorizationMode.FullAccess ? "R3" : "R2";
+                            var resp = await client.PostAsJsonAsync("admin/authorization/request-approval", new
+                            {
+                                machine_key = Environment.MachineName,
+                                requested_mode = modeStr,
+                                reason = "Desktop client yetki modu geçişi"
+                            });
+                            if (resp.IsSuccessStatusCode)
+                            {
+                                statusBlockText.Text = "Talep iletildi! Yönetici konsolundan onaylandıktan sonra PIN kodunu giriniz.";
+                                statusBlockText.Foreground = HexBrush("#3fb950");
+                            }
+                            else
+                            {
+                                statusBlockText.Text = "Talep iletilemedi (API çevrimdışı).";
+                                statusBlockText.Foreground = HexBrush("#f85149");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            statusBlockText.Text = "Hata: " + ex.Message;
+                            statusBlockText.Foreground = HexBrush("#f85149");
+                        }
+                        finally { requestBtn.IsEnabled = true; }
+                    };
+
+                    var pinPanel = new StackPanel
+                    {
+                        Spacing = 10,
+                        Children =
+                        {
+                            new TextBlock { Text = $"{newMode} modu kritik güvenlik yetkileri içerir. 2. Onay (Dual Authorization) kapsamında yönetici panelinden üretilen onay kodunu (PIN) giriniz:", TextWrapping = TextWrapping.Wrap },
+                            pinBox,
+                            requestBtn,
+                            statusBlockText
+                        }
+                    };
+
                     var confirm = new ContentDialog
                     {
-                        Title = "Tam Erisim (R3)",
-                        Content = new TextBlock { Text = "R3 guvenlik azaltan degisikliklere izin verir. Yetkili uzman misiniz?", TextWrapping = TextWrapping.Wrap },
-                        PrimaryButtonText = "Evet", CloseButtonText = "Vazgec",
+                        Title = $"2. Onay Gerekli ({newMode})",
+                        Content = pinPanel,
+                        PrimaryButtonText = "Doğrula ve Geç",
+                        CloseButtonText = "Vazgeç",
                         XamlRoot = Content.XamlRoot
                     };
+
                     if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+
+                    var enteredPin = pinBox.Text?.Trim() ?? "";
+                    bool pinValid = false;
+
+                    try
+                    {
+                        using var client = new HttpClient { BaseAddress = new Uri("http://localhost:5080/") };
+                        var modeStr = newMode == AuthorizationMode.FullAccess ? "R3" : "R2";
+                        var resp = await client.PostAsJsonAsync("admin/authorization/validate-code", new
+                        {
+                            machine_key = Environment.MachineName,
+                            mode = modeStr,
+                            code = enteredPin
+                        });
+                        if (resp.IsSuccessStatusCode)
+                        {
+                            var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
+                            pinValid = json.TryGetProperty("valid", out var v) && v.GetBoolean();
+                        }
+                    }
+                    catch { }
+
+                    if (!pinValid)
+                    {
+                        var errDialog = new ContentDialog
+                        {
+                            Title = "Geçersiz Onay Kodu",
+                            Content = new TextBlock { Text = "Girdiğiniz onay kodu doğrulanamadı veya süresi dolmuş. Yetki modu değiştirilmedi.", TextWrapping = TextWrapping.Wrap },
+                            CloseButtonText = "Tamam",
+                            XamlRoot = Content.XamlRoot
+                        };
+                        await errDialog.ShowAsync();
+                        return;
+                    }
                 }
                 var oldMode = _mode;
                 _mode = newMode;
@@ -280,10 +392,321 @@ public sealed partial class MainWindow : Window
         catch { }
     }
 
+    public void ForceClose()
+    {
+        IsExplicitExit = true;
+        _repairPollTimer?.Stop();
+        Close();
+    }
+
     private void UpdateModeBadge()
     {
-        // Yetki modu artik Ayarlar dialog'unda gosteriliyor - ana pencerede badge yok
+        if (ModeComboBox != null)
+        {
+            _updatingModeCombo = true;
+            try
+            {
+                var idx = (int)_mode;
+                if (idx >= 0 && idx < ModeComboBox.Items.Count)
+                {
+                    ModeComboBox.SelectedIndex = idx;
+                }
+            }
+            finally
+            {
+                _updatingModeCombo = false;
+            }
+        }
+
+        if (ModeBadgeBorder != null && ModeBadgeText != null && ModeBadgeDot != null)
+        {
+            var (label, fgHex, bgHex, borderHex) = _mode switch
+            {
+                AuthorizationMode.ReadOnly => ("R0 - Salt Okunur", "#58a6ff", "#0d1d3a", "#1f6feb"),
+                AuthorizationMode.Approved => ("R1 - Onaylı", "#d29922", "#2a1f0d", "#d29922"),
+                AuthorizationMode.AutoLowRisk => ("R2 - Otomatik", "#3fb950", "#0d2a14", "#238636"),
+                AuthorizationMode.FullAccess => ("R3 - Uzman", "#f85149", "#2a0d0d", "#da3633"),
+                _ => ("R0 - Salt Okunur", "#58a6ff", "#0d1d3a", "#1f6feb")
+            };
+
+            ModeBadgeText.Text = label;
+            ModeBadgeText.Foreground = HexBrush(fgHex);
+            ModeBadgeDot.Fill = HexBrush(fgHex);
+            ModeBadgeBorder.Background = HexBrush(bgHex);
+            ModeBadgeBorder.BorderBrush = HexBrush(borderHex);
+        }
     }
+
+    private async void ModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingModeCombo || ModeComboBox == null || ModeComboBox.SelectedItem is not ComboBoxItem item) return;
+        if (!int.TryParse(item.Tag?.ToString(), out var targetIdx)) return;
+
+        var targetMode = (AuthorizationMode)targetIdx;
+        if (targetMode == _mode) return;
+
+        if (targetMode >= AuthorizationMode.AutoLowRisk) // R2 or R3 requires dual approval PIN
+        {
+            var pinBox = new TextBox { PlaceholderText = "6 haneli onay kodu (PIN)...", MaxLength = 6 };
+            var requestBtn = new Button { Content = "Onay Kodu Talep Et", FontSize = 12 };
+            var statusBlockText = new TextBlock { FontSize = 11, Foreground = HexBrush("#8b949e") };
+
+            requestBtn.Click += async (s, ev) =>
+            {
+                requestBtn.IsEnabled = false;
+                statusBlockText.Text = "Onay talebi gönderiliyor...";
+                try
+                {
+                    using var client = new HttpClient { BaseAddress = new Uri("http://localhost:5080/") };
+                    var modeStr = targetMode == AuthorizationMode.FullAccess ? "R3" : "R2";
+                    var resp = await client.PostAsJsonAsync("admin/authorization/request-approval", new
+                    {
+                        machine_key = Environment.MachineName,
+                        requested_mode = modeStr,
+                        reason = "Desktop client yetki modu geçişi"
+                    });
+                    if (resp.IsSuccessStatusCode)
+                    {
+                        statusBlockText.Text = "Talep iletildi! Yönetici konsolundan onaylandıktan sonra PIN kodunu giriniz.";
+                        statusBlockText.Foreground = HexBrush("#3fb950");
+                    }
+                    else
+                    {
+                        statusBlockText.Text = "Talep iletilemedi (API çevrimdışı).";
+                        statusBlockText.Foreground = HexBrush("#f85149");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    statusBlockText.Text = "Hata: " + ex.Message;
+                    statusBlockText.Foreground = HexBrush("#f85149");
+                }
+                finally { requestBtn.IsEnabled = true; }
+            };
+
+            var pinPanel = new StackPanel
+            {
+                Spacing = 10,
+                Children =
+                {
+                    new TextBlock { Text = $"{targetMode} modu kritik güvenlik yetkileri içerir. 2. Onay (Dual Authorization) kapsamında yönetici panelinden üretilen onay kodunu (PIN) giriniz:", TextWrapping = TextWrapping.Wrap },
+                    pinBox,
+                    requestBtn,
+                    statusBlockText
+                }
+            };
+
+            var confirm = new ContentDialog
+            {
+                Title = $"2. Onay Gerekli ({targetMode})",
+                Content = pinPanel,
+                PrimaryButtonText = "Doğrula ve Geç",
+                CloseButtonText = "Vazgeç",
+                XamlRoot = Content.XamlRoot
+            };
+
+            if (await confirm.ShowAsync() != ContentDialogResult.Primary)
+            {
+                UpdateModeBadge(); // Revert back
+                return;
+            }
+
+            var enteredPin = pinBox.Text?.Trim() ?? "";
+            bool pinValid = false;
+
+            try
+            {
+                using var client = new HttpClient { BaseAddress = new Uri("http://localhost:5080/") };
+                var modeStr = targetMode == AuthorizationMode.FullAccess ? "R3" : "R2";
+                var resp = await client.PostAsJsonAsync("admin/authorization/validate-code", new
+                {
+                    machine_key = Environment.MachineName,
+                    mode = modeStr,
+                    code = enteredPin
+                });
+                if (resp.IsSuccessStatusCode)
+                {
+                    var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
+                    pinValid = json.TryGetProperty("valid", out var v) && v.GetBoolean();
+                }
+            }
+            catch { }
+
+            if (!pinValid)
+            {
+                var errDialog = new ContentDialog
+                {
+                    Title = "Geçersiz Onay Kodu",
+                    Content = new TextBlock { Text = "Girdiğiniz onay kodu doğrulanamadı veya süresi dolmuş. Yetki modu değiştirilmedi.", TextWrapping = TextWrapping.Wrap },
+                    CloseButtonText = "Tamam",
+                    XamlRoot = Content.XamlRoot
+                };
+                await errDialog.ShowAsync();
+                UpdateModeBadge(); // Revert back
+                return;
+            }
+        }
+
+        var old = _mode;
+        _mode = targetMode;
+        SaveMode();
+        UpdateModeBadge();
+        await AuditLogger.LogModeChangeAsync(_repoRoot, old.ToString(), _mode.ToString());
+    }
+
+    private void PinBtn_Click(object sender, RoutedEventArgs e)
+    {
+        _isPinned = !_isPinned;
+        try
+        {
+            var aw = GetAppWindow();
+            if (aw.Presenter is OverlappedPresenter p)
+            {
+                p.IsAlwaysOnTop = _isPinned;
+            }
+            PinIcon.Foreground = HexBrush(_isPinned ? "#58a6ff" : "#8b949e");
+            ToolTipService.SetToolTip(PinBtn, _isPinned ? "Sabitlemeyi kaldir" : "Pencereyi sabitle (Ustte tut)");
+            SaveWindowPos(aw);
+        }
+        catch { }
+    }
+
+    private void ConfigureWindow(AppWindow aw)
+    {
+        const int defWidth = 420;
+        const int defHeight = 560;
+
+        WindowPos? saved = null;
+        try
+        {
+            if (_posFile != null && File.Exists(_posFile))
+            {
+                var txt = File.ReadAllText(_posFile);
+                saved = JsonSerializer.Deserialize<WindowPos>(txt);
+            }
+        }
+        catch { }
+
+        int w = saved != null && saved.Width >= 360 && saved.Width <= 800 ? saved.Width : defWidth;
+        int h = saved != null && saved.Height >= 400 && saved.Height <= 900 ? saved.Height : defHeight;
+
+        int x, y;
+        if (saved != null && saved.X >= 0 && saved.Y >= 0)
+        {
+            x = saved.X;
+            y = saved.Y;
+        }
+        else
+        {
+            var displayArea = DisplayArea.GetFromWindowId(aw.Id, DisplayAreaFallback.Primary);
+            var workArea = displayArea.WorkArea;
+            x = workArea.X + workArea.Width - w - 16;
+            y = workArea.Y + workArea.Height - h - 16;
+        }
+
+        aw.MoveAndResize(new Windows.Graphics.RectInt32(x, y, w, h));
+
+        if (aw.Presenter is OverlappedPresenter p)
+        {
+            p.IsResizable = true;
+            p.IsMaximizable = false;
+            p.IsMinimizable = true;
+            if (saved != null && saved.Pinned)
+            {
+                _isPinned = true;
+                p.IsAlwaysOnTop = true;
+                PinIcon.Foreground = HexBrush("#58a6ff");
+                ToolTipService.SetToolTip(PinBtn, "Sabitlemeyi kaldir");
+            }
+        }
+
+        if (AppWindowTitleBar.IsCustomizationSupported())
+        {
+            var titleBar = aw.TitleBar;
+            titleBar.ButtonBackgroundColor = Windows.UI.Color.FromArgb(0, 0, 0, 0);
+            titleBar.ButtonForegroundColor = Windows.UI.Color.FromArgb(255, 201, 209, 217);
+            titleBar.ButtonHoverBackgroundColor = Windows.UI.Color.FromArgb(40, 255, 255, 255);
+            titleBar.ButtonHoverForegroundColor = Windows.UI.Color.FromArgb(255, 255, 255, 255);
+            titleBar.ButtonPressedBackgroundColor = Windows.UI.Color.FromArgb(60, 255, 255, 255);
+            titleBar.ButtonPressedForegroundColor = Windows.UI.Color.FromArgb(255, 255, 255, 255);
+            titleBar.ButtonInactiveBackgroundColor = Windows.UI.Color.FromArgb(0, 0, 0, 0);
+            titleBar.ButtonInactiveForegroundColor = Windows.UI.Color.FromArgb(255, 139, 148, 158);
+        }
+    }
+
+    private void StartRemoteRepairPolling()
+    {
+        _repairPollTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _repairPollTimer.Tick += async (s, e) => await CheckRemoteRepairsAsync();
+        _repairPollTimer.Start();
+    }
+
+    private async Task CheckRemoteRepairsAsync()
+    {
+        try
+        {
+            using var client = new HttpClient { BaseAddress = new Uri("http://localhost:5080/") };
+            var resp = await client.GetAsync($"api/v1/remote-repair/pending?machine_key={Uri.EscapeDataString(Environment.MachineName)}");
+            if (!resp.IsSuccessStatusCode) return;
+
+            var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
+            if (json.TryGetProperty("items", out var items) && items.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var rep in items.EnumerateArray())
+                {
+                    var id = rep.TryGetProperty("id", out var idp) ? idp.GetString() : null;
+                    var playbookId = rep.TryGetProperty("playbook_id", out var pip) ? pip.GetString() : null;
+                    if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(playbookId)) continue;
+
+                    var executor = _executors.FirstOrDefault(x => string.Equals(x.PlaybookId, playbookId, StringComparison.OrdinalIgnoreCase));
+                    if (executor != null)
+                    {
+                        AddBotMessage($"[UZAKTAN MÜDAHALE] Yönetici konsolundan komut alındı: {playbookId}. Başlatılıyor...");
+                        var res = await executor.ExecuteAsync();
+                        var status = res.Success ? "completed" : "failed";
+
+                        await client.PostAsJsonAsync("api/v1/remote-repair/result", new
+                        {
+                            repair_id = id,
+                            status = status,
+                            output = res.Message
+                        });
+
+                        AddBotMessage(res.Success
+                            ? $"[UZAKTAN MÜDAHALE] Tamamlandı: {res.Message}"
+                            : $"[UZAKTAN MÜDAHALE] Hata: {res.Message}");
+                    }
+                    else
+                    {
+                        await client.PostAsJsonAsync("api/v1/remote-repair/result", new
+                        {
+                            repair_id = id,
+                            status = "failed",
+                            output = $"Tanınmayan onarım playbook: {playbookId}"
+                        });
+                    }
+                }
+            }
+        }
+        catch { }
+    }
+
+    private void SaveWindowPos(AppWindow aw)
+    {
+        try
+        {
+            if (_posFile == null) return;
+            var pos = aw.Position;
+            var size = aw.Size;
+            if (size.Width <= 0 || size.Height <= 0) return;
+            var wp = new WindowPos(pos.X, pos.Y, size.Width, size.Height, _isPinned);
+            Directory.CreateDirectory(Path.GetDirectoryName(_posFile)!);
+            File.WriteAllText(_posFile, JsonSerializer.Serialize(wp));
+        }
+        catch { }
+    }
+
+    private sealed record WindowPos(int X, int Y, int Width, int Height, bool Pinned);
 
     private void InputBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {
@@ -350,15 +773,45 @@ public sealed partial class MainWindow : Window
         try
         {
             var env = LoadEnv();
-            if (!env.TryGetValue("YAPAIR_API_KEY", out var apiKey)) return null;
             var baseUrl = env.TryGetValue("YAPAIR_API_BASE_URL", out var u) && !string.IsNullOrEmpty(u)
-                ? u : "http://localhost:5080";
+                ? u : (Environment.GetEnvironmentVariable("YAPAIR_API_BASE_URL") ?? "http://localhost:5080");
 
-            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(45) };
+            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+
+            // 1. Admin API Sunucusunun AI durumunu kontrol et
+            try
+            {
+                using var statusResp = await http.GetAsync(baseUrl.TrimEnd('/') + "/api/v1/ai-config/status");
+                if (statusResp.IsSuccessStatusCode)
+                {
+                    var statusBody = await statusResp.Content.ReadAsStringAsync();
+                    using var sdoc = JsonDocument.Parse(statusBody);
+                    var hasKey = sdoc.RootElement.TryGetProperty("has_key", out var hk) && hk.GetBoolean();
+                    var webResearch = !sdoc.RootElement.TryGetProperty("enable_web_research", out var wr) || wr.GetBoolean();
+
+                    if (!hasKey)
+                    {
+                        return "(YAPAIR Admin panelinde Gemini API anahtarı henüz tanımlanmamış. Admin Paneli > AI Ayarları menüsünden anahtar girildiğinde internet destekli çözümler burada görüntülenecektir.)";
+                    }
+
+                    if (!webResearch)
+                    {
+                        return "(YAPAIR Admin panelinde istemci web araştırma izni kapatılmış.)";
+                    }
+                }
+            }
+            catch { }
+
+            // 2. Güvenli API uç noktasından çözümü iste
             var payload = JsonSerializer.Serialize(new { query });
             using var content = new System.Net.Http.StringContent(payload, System.Text.Encoding.UTF8, "application/json");
-            content.Headers.Add("X-Yapair-Api-Key", apiKey);
-            using var resp = await http.PostAsync(baseUrl.TrimEnd('/') + "/admin/research", content);
+
+            if (env.TryGetValue("YAPAIR_API_KEY", out var apiKey) && !string.IsNullOrEmpty(apiKey))
+            {
+                content.Headers.Add("X-Yapair-Api-Key", apiKey);
+            }
+
+            using var resp = await http.PostAsync(baseUrl.TrimEnd('/') + "/api/v1/research", content);
             if (!resp.IsSuccessStatusCode) return null;
             var body = await resp.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(body);
@@ -592,17 +1045,27 @@ public sealed partial class MainWindow : Window
             CloseButtonText = "Vazgec",
             XamlRoot = Content.XamlRoot
         };
-        if (await confirm.ShowAsync() != ContentDialogResult.Primary) return;
+        if (await confirm.ShowAsync() != ContentDialogResult.Primary)
+        {
+            await AuditLogger.LogRepairActionAsync(_repoRoot, "repair_cancelled", executor.PlaybookId, _mode.ToString(), "Kullanici onaylamadi");
+            return;
+        }
 
+        await AuditLogger.LogRepairActionAsync(_repoRoot, "repair_approved", executor.PlaybookId, _mode.ToString(), "Kullanici tarafindan onaylandi");
         StatusText.Text = "Onarim uygulaniyor...";
         try
         {
             var result = await executor.ExecuteAsync();
+            await AuditLogger.LogRepairActionAsync(_repoRoot, "repair_executed", executor.PlaybookId, _mode.ToString(), result.Message);
             AddBotMessage(result.Success
                 ? $"Onarim basarili: {result.Message}"
                 : $"Onarim basarisiz: {result.Message}");
         }
-        catch (Exception ex) { AddBotMessage("Onarim hatasi: " + ex.Message); }
+        catch (Exception ex)
+        {
+            await AuditLogger.LogRepairActionAsync(_repoRoot, "repair_failed", executor.PlaybookId, _mode.ToString(), ex.Message);
+            AddBotMessage("Onarim hatasi: " + ex.Message);
+        }
         finally { StatusText.Text = ""; }
     }
 

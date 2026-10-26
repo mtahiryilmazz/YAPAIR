@@ -36,3 +36,5 @@ Thumbs.db
 ## Local tooling
 .idea/
 .vscode/
+*.bak
+*.bak-*

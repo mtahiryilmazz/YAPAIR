@@ -17,8 +17,18 @@ public sealed class ResearchService
 
     public ResearchService(string apiKey, string model)
     {
-        _apiKey = apiKey;
-        _model = string.IsNullOrWhiteSpace(model) ? "gemini-2.5-flash-lite" : model;
+        _apiKey = apiKey.Trim();
+        _model = NormalizeModel(model);
+    }
+
+    private static string NormalizeModel(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "gemini-1.5-flash";
+        var m = raw.Trim().ToLowerInvariant();
+        if (m.Contains("1.5-pro") || m == "gemini-pro") return "gemini-1.5-pro";
+        if (m.Contains("2.0") || m.Contains("2.5")) return "gemini-2.0-flash";
+        if (m.Contains("1.5-flash") || m.Contains("flash")) return "gemini-1.5-flash";
+        return "gemini-1.5-flash";
     }
 
     public async Task<ResearchResult> ResearchAsync(string query, CancellationToken ct = default)
@@ -26,23 +36,23 @@ public sealed class ResearchService
         var results = await SearchDuckDuckGoAsync(query, 5, ct);
         var context = BuildContext(results);
         var prompt = $"""
-            Sen bir Windows destek uzmanÄ±sÄ±n. KullanÄ±cÄ±nÄ±n sorununu ve web arama sonuÃ§larÄ±nÄ± kullanarak
-            kÄ±sa, uygulanabilir bir Ã§Ã¶zÃ¼m Ã¶nerisi yaz. TÃ¼rkÃ§e yaz.
+            Sen bir Windows destek uzmanısın. Kullanıcının sorununu ve web arama sonuçlarını kullanarak
+            kısa, uygulanabilir bir çözüm önerisi yaz. Türkçe yaz.
 
             KULLANICI SORUNU: {query}
 
-            WEB ARAMA SONUÃ‡LARI:
+            WEB ARAMA SONUÇLARI:
             {context}
 
-            YanÄ±t formatÄ±:
-            Ã–ZET: (1-2 cÃ¼mle)
+            Yanıt formatı:
+            ÖZET: (1-2 cümle)
             ADIMLAR:
             1. ...
             2. ...
-            KOMUT: (varsa tek satÄ±r cmd/powershell, yoksa "yok")
-            RÄ°SK: R0/R1/R2/R3
+            KOMUT: (varsa tek satır cmd/powershell, yoksa "yok")
+            RİSK: R0/R1/R2/R3
             """;
-        var answer = await CallGeminiAsync(prompt, ct);
+        var answer = await CallGeminiWithFallbackAsync(prompt, ct);
         return new ResearchResult(query, answer, results);
     }
 
@@ -73,9 +83,26 @@ public sealed class ResearchService
         return hits;
     }
 
-    private async Task<string> CallGeminiAsync(string prompt, CancellationToken ct)
+    private async Task<string> CallGeminiWithFallbackAsync(string prompt, CancellationToken ct)
     {
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent";
+        // 1. Önce seçilen veya normalize edilen modeli dene
+        var (ok, answer, errCode, errDetail) = await TryCallGeminiAsync(_model, prompt, ct);
+        if (ok) return answer;
+
+        // 2. Eğer 404 (model bulunamadı) alındıysa en stabil genel model olan 'gemini-1.5-flash' ile fallback dene
+        if (errCode == 404 && _model != "gemini-1.5-flash")
+        {
+            var (fallbackOk, fallbackAns, _, fallbackErr) = await TryCallGeminiAsync("gemini-1.5-flash", prompt, ct);
+            if (fallbackOk) return fallbackAns;
+            return $"Gemini API Hatası: {fallbackErr}";
+        }
+
+        return $"Gemini API Hatası (HTTP {errCode}): {errDetail}";
+    }
+
+    private async Task<(bool Success, string Answer, int StatusCode, string ErrorDetail)> TryCallGeminiAsync(string model, string prompt, CancellationToken ct)
+    {
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={_apiKey}";
         var payload = new
         {
             contents = new[] { new { parts = new[] { new { text = prompt } } } },
@@ -86,12 +113,38 @@ public sealed class ResearchService
             Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
         };
         req.Headers.Add("x-goog-api-key", _apiKey);
+
         using var resp = await Http.SendAsync(req, ct);
         var body = await resp.Content.ReadAsStringAsync(ct);
-        if (!resp.IsSuccessStatusCode) return $"Gemini hata: HTTP {(int)resp.StatusCode}";
-        using var doc = JsonDocument.Parse(body);
-        return doc.RootElement.GetProperty("candidates")[0].GetProperty("content")
-            .GetProperty("parts")[0].GetProperty("text").GetString() ?? "(boÅŸ)";
+        var statusCode = (int)resp.StatusCode;
+
+        if (!resp.IsSuccessStatusCode)
+        {
+            var detail = $"HTTP {statusCode}";
+            try
+            {
+                using var errDoc = JsonDocument.Parse(body);
+                if (errDoc.RootElement.TryGetProperty("error", out var ep) &&
+                    ep.TryGetProperty("message", out var mp))
+                {
+                    detail = mp.GetString() ?? detail;
+                }
+            }
+            catch { }
+            return (false, "", statusCode, detail);
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            var text = doc.RootElement.GetProperty("candidates")[0].GetProperty("content")
+                .GetProperty("parts")[0].GetProperty("text").GetString() ?? "(boş yanıt)";
+            return (true, text, statusCode, "");
+        }
+        catch (Exception ex)
+        {
+            return (false, "", statusCode, "JSON çözümleme hatası: " + ex.Message);
+        }
     }
 
     private static string BuildContext(List<SearchHit> hits)

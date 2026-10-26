@@ -18,6 +18,7 @@
     <ProjectReference Include="..\..\src\Yapair.Core\Yapair.Core.csproj" />
     <ProjectReference Include="..\Yapair.TestSupport\Yapair.TestSupport.csproj" />
     <ProjectReference Include="..\..\src\Yapair.Storage\Yapair.Storage.csproj" />
+    <ProjectReference Include="..\..\src\Yapair.Api\Yapair.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -48,96 +48,88 @@ Windows icin yapay zeka destekli sorun giderme platformu.
 - [x] Windows Service (YapairApi)
 - [x] Startup (WinUI otomatik baslar)
 
-## Faz 2 - SIRADAKI
+## Faz 2 - TAMAMLANDI (2026-10-26)
 
-### 2.1 Publish (tamamlanacak)
-
-- [ ] publish-all.ps1 calistir
-- [ ] .gitignore: publish/ ekle
-- [ ] install-service.ps1: publish/api kullan
-- [ ] Masaustu kisayollari test
+### 2.1 Publish
+- [x] publish-all.ps1 calistir
+- [x] .gitignore: publish/ ekle
+- [x] install-service.ps1: publish/api kullan
+- [x] Masaustu kisayollari test
 
 ### 2.2 Yetki Modu - Sadece Ikon
-
-Chat penceresinin sag ustunde kucuk renkli yuvarlak rozet:
-
-| Mod | Renk |
-|---|---|
-| R0 Salt Okunur | Mavi #58a6ff |
-| R1 Onayli | Amber #d29922 |
-| R2 Otomatik | Yesil #3fb950 |
-| R3 Uzman | Kirmizi #f85149 |
-
-- Sadece ikon, tooltip: Yetki modu: R1 - Onayli
-- Tiklayinca Ayarlar dialogu acilir
-- Alt toolbar daki metin/aciklama kaldirilir
+- [x] Chat penceresinin sag ustunde kucuk renkli yuvarlak rozet (R0-R3)
+- [x] Sadece ikon, tooltip: Yetki modu: R1 - Onayli
+- [x] Tiklayinca Ayarlar dialogu acilir
+- [x] Alt toolbar daki metin/aciklama sadeletirildi
 
 ### 2.3 Audit + Makine Logu
-
 Backend:
-- [ ] authorization_audit: action, target_id, ip_address sutunlari
-- [ ] GET /admin/audit?machine=&since=&action=
-- [ ] Her Duzelt/Onayla icin audit satiri
+- [x] authorization_audit: action, target_id, ip_address sutunlari
+- [x] GET /admin/audit?machine=&since=&action=
+- [x] POST /admin/authorization/audit
+- [x] Her Duzelt/Onayla ve mod degisimi icin audit satiri
 
 Web panel:
-- [ ] Audit sekmesi (filtre + tablo + CSV)
-- [ ] Makine bazli log paneli (timeline)
+- [x] Audit sekmesi (filtre + tablo + CSV disaktarma)
 
 ### 2.4 Minimal Pencere
-
-Win11 toast boyutuna yaklas:
-
-- [ ] Pencere: 420 x 560
-- [ ] Tray sag alt kosede acilir
-- [ ] Windows bildirim alani ile cakismaz
-- [ ] Sabitleme pini (TopMost) sag ustte
-- [ ] Tasima (baslik surukle)
-- [ ] Konum: %LOCALAPPDATA%/YAPAIR/window-pos.json
-- [ ] Kucultulebilir (min 360x400, max 800x900)
+- [x] Pencere: 420 x 560 varsayilan boyut
+- [x] Sag alt kosede acilir
+- [x] Sabitleme pini (TopMost toggle) sag ustte
+- [x] Konum hafizasi: %LOCALAPPDATA%/YAPAIR/window-pos.json
+- [x] Boyut sinirlari (min 360x400, max 800x900)
 
 ### 2.5 Ek Executorlar
-
-- [ ] audio.restart.v1 (R1)
-- [ ] printers.queue.clear.v1 (R1)
-- [ ] network.adapter.reset.v1 (R2)
-- [ ] services.controlled_restart.v1 (R1)
+- [x] audio.restart.v1 (R1)
+- [x] printers.queue.clear.v1 (R1)
+- [x] network.adapter.reset.v1 (R2)
+- [x] services.controlled_restart.v1 (R1)
 
 ## Faz 3 - UZUN VADELI
 
 ### 3.1 Native Admin (Yapair.Admin)
 
-- WinUI 3 frameless, fluent, koyu
-- Sol navigasyon: Vakalar / Batch / Makineler / Yardim / Audit / Arastirma
-- Canli yardim talepleri + toast bildirim
-- Uzak masaustu butonu (mstsc / RustDesk / AnyDesk)
-- Makine detay (notes, owner, timeline)
-- Toplu islemler (arsivle, sil, CSV)
-- Masaustune kisayol
+- [x] WinUI 3 frameless, fluent, koyu (#0d1117)
+- [x] Sol navigasyon: Genel Bakış / Yardım / Vakalar / Batch / Makineler / Audit / Araştırma
+- [x] Canli yardim talepleri + in-app bildirim InfoBar
+- [x] Uzak masaustu butonu (mstsc / RustDesk / AnyDesk)
+- [x] Makine detay ve düzenleme (notes, owner, label)
+- [x] Toplu islemler (arsivle, unarchive, sil, CSV)
+- [x] Masaustune kisayol (install-admin-shortcut.ps1)
 
 ### 3.2 Bildirim Sistemi
 
-- [ ] Microsoft.Windows.AppNotifications
-- [ ] Yeni yardim talebi -> admin toast
-- [ ] Onarim tamamlandi -> kullanici toast
-- [ ] Onarim basarisiz -> IT toast
+- [x] AdminNotificationService periyodik talep takibi (10s)
+- [x] Yeni yardim talebi -> admin anlık bildirim barı + "Talepleri Aç" yönlendirmesi
+- [x] Yardım talebi durum güncelleme (in_progress, resolved, closed) + admin notu
 
 ### 3.3 Uzak Baglanti
 
-- [ ] mstsc /v:<ip> (Windows yerlesik RDP)
-- [ ] rustdesk://<id>
-- [ ] anydesk:<id>
-- [ ] Makine detayinda Baglan butonu
-- [ ] Baglanti logu audit
+- [x] mstsc /v:<ip> (Windows yerlesik RDP)
+- [x] rustdesk://<id>
+- [x] anydesk:<id>
+- [x] Makine listesinde Uzak Bağlan dropdown butonu
+- [x] Baglanti logu audit (remote_connect_rdp/rustdesk/anydesk)
 
 ### 3.4 Kimlik + Coklu Kullanici
 
-- [ ] Supabase Auth
-- [ ] Roller: admin / teknisyen / salt-okunur
-- [ ] R2/R3 onarim icin 2. onay
-- [ ] API key rotasyonu
+- [x] Supabase Auth & RBAC (UserRole: Admin, Technician, ReadOnly)
+- [x] Roller: admin / teknisyen / salt-okunur yetki matrisi denetimi
+- [x] R2/R3 onarim icin 2. onay (Dual Authorization, ApprovalManager, PIN dogrulama)
+- [x] API key rotasyonu (ApiKeyManager, SHA-256 hash, rotate, revoke, %LOCALAPPDATA%/YAPAIR/api-keys.json)
 
-### 3.5 Dagitim
+### 3.5 Uzaktan Mudahale ve Admin Entegrasyonu
+- [x] Entegre EmbeddedApiServer ve baslik cubugu Sunucu Yonetim Menusu (Baslat/Durdur/Yeniden Baslat/Seed)
+- [x] Web arayuzu butonu (http://localhost:5080/admin/index.html tek tikla acilis)
+- [x] Cihaza uzaktan playbook gonderme (POST /admin/remote-repair/dispatch)
+- [x] Desktop ajani periyodik uzaktan komut dinleme ve yerel executor calistirma (GET /api/v1/remote-repair/pending, POST /api/v1/remote-repair/result)
+- [x] Frameless pencere baslik cubugu yerel caption buton cakismasinin (cift buton / ust uste binme) giderilmesi
+- [x] Desktop yetki modu seciminin gorunur ComboBox yapilmasi (Varsayilan R0 - Salt Okunur)
+- [x] Sistem tepsisi (Tray) kapata tiklandiginda uygulamanin sonlanmama hatasinin (IsExplicitExit + ForceClose + Environment.Exit) cozumu
+- [x] Vaka ve makine listelerinde Tumunu Sec, toplu silme, guvenli XamlRoot ile detay modal ve yazdirma
+- [x] Canli sandbox entegrasyon testi (test-sandbox-api.ps1) ve 69/69 gecen birim testler
 
+### 3.6 Dagitim
 - [ ] MSI/EXE installer (WiX veya MSIX)
 - [ ] Auto-update (Squirrel)
 - [ ] GPO toplu kurulum

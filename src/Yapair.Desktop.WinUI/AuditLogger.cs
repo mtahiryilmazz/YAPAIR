@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Text.Json;
 
 namespace Yapair.Desktop.WinUI;
@@ -9,14 +9,23 @@ public static class AuditLogger
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "YAPAIR", "audit.log");
 
-    public static async Task LogModeChangeAsync(string repoRoot, string modeBefore, string modeAfter)
+    public static async Task LogModeChangeAsync(string repoRoot, string modeBefore, string modeAfter) =>
+        await LogAuditInternalAsync(repoRoot, modeBefore, modeAfter, "mode_change", null, "UI mode change");
+
+    public static async Task LogRepairActionAsync(string repoRoot, string action, string playbookId, string currentMode, string? note = null) =>
+        await LogAuditInternalAsync(repoRoot, currentMode, currentMode, action, playbookId, note);
+
+    private static async Task LogAuditInternalAsync(string repoRoot, string? modeBefore, string? modeAfter, string action, string? targetId, string? note)
     {
         var entry = new
         {
             ts = DateTimeOffset.UtcNow.ToString("O"),
             machine = Environment.MachineName,
             mode_before = modeBefore,
-            mode_after = modeAfter
+            mode_after = modeAfter,
+            action,
+            target_id = targetId,
+            note
         };
 
         try
@@ -39,7 +48,9 @@ public static class AuditLogger
                 machine_key = Environment.MachineName,
                 mode_before = modeBefore,
                 mode_after = modeAfter,
-                note = "UI mode change"
+                action,
+                target_id = targetId,
+                note
             });
             using var content = new System.Net.Http.StringContent(payload, System.Text.Encoding.UTF8, "application/json");
             content.Headers.Add("X-Yapair-Api-Key", apiKey);

@@ -1,4 +1,4 @@
-﻿using H.NotifyIcon;
+using H.NotifyIcon;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Drawing;
@@ -65,12 +65,18 @@ public partial class App : Application
     private MenuFlyout BuildMenu()
     {
         var m = new MenuFlyout();
-        var show = new MenuFlyoutItem { Text = "Ac" };
+        var show = new MenuFlyoutItem { Text = "Göster / Aç" };
         show.Click += (_, _) => MainWin?.ShowWindow();
-        var other = new MenuFlyoutItem { Text = "Diger Sorunlar" };
+        show.Command = new RelayCommand(() => MainWin?.ShowWindow());
+
+        var other = new MenuFlyoutItem { Text = "Diğer Sorunlar..." };
         other.Click += (_, _) => MainWin?.ShowOtherIssuesAsync();
-        var exit = new MenuFlyoutItem { Text = "Cikis" };
+        other.Command = new RelayCommand(() => MainWin?.ShowOtherIssuesAsync());
+
+        var exit = new MenuFlyoutItem { Text = "Kapat (Çıkış)" };
         exit.Click += (_, _) => ExitApp();
+        exit.Command = new RelayCommand(ExitApp);
+
         m.Items.Add(show);
         m.Items.Add(other);
         m.Items.Add(new MenuFlyoutSeparator());
@@ -87,8 +93,30 @@ public partial class App : Application
 
     public static void ExitApp()
     {
-        try { Tray?.Dispose(); } catch { }
+        try
+        {
+            Tray?.Dispose();
+        }
+        catch { }
         Tray = null;
-        Current.Exit();
+
+        try
+        {
+            if (MainWin != null)
+            {
+                MainWin.IsExplicitExit = true;
+                MainWin.ForceClose();
+            }
+        }
+        catch { }
+
+        try
+        {
+            Current.Exit();
+        }
+        catch { }
+
+        // Kesin sonlandırma: Windows sistem tepsisinde asılı kalmayı ve arka plan döngüsünü tamamen bitirir
+        Environment.Exit(0);
     }
 }

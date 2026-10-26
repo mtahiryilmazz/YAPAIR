@@ -1,5 +1,8 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Yapair.Admin/Yapair.Admin.csproj">
+      <Platform Project="x64" />
+    </Project>
     <Project Path="src/Yapair.Api/Yapair.Api.csproj" />
     <Project Path="src/Yapair.Cli/Yapair.Cli.csproj" />
     <Project Path="src/Yapair.Core/Yapair.Core.csproj" />

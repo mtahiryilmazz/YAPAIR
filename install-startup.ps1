@@ -1,5 +1,5 @@
-﻿$ErrorActionPreference = "Stop"
-$repo = "C:\Users\YILMAZ\Documents\deepseek-harness\default-workspace\yapair"
+$ErrorActionPreference = "Stop"
+$repo = $PSScriptRoot
 
 $exe = $null
 $candidates = @(

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="utf-8">
@@ -121,6 +121,100 @@
 </div>
 <table id="machinesTable"></table>
 
+<!-- ============ AUDIT KAYITLARI ============ -->
+<h2>Audit & Onarım Logları <span class="hint" id="auditCount">(authorization_audit)</span></h2>
+<div class="toolbar">
+  <select id="auditActionFilter" onchange="renderAudits()" style="background:#0d1117;color:#c9d1d9;border:1px solid #30363d;padding:4px 8px;border-radius:4px">
+    <option value="">Tüm Eylemler</option>
+    <option value="mode_change">Yetki Değişimi</option>
+    <option value="repair_executed">Onarım Yapıldı</option>
+    <option value="repair_approved">Onarım Onaylandı</option>
+    <option value="repair_cancelled">Onarım İptal</option>
+  </select>
+  <button class="sec small" onclick="refreshAudits()">Yenile</button>
+  <button class="sec small" onclick="exportAuditCsv()">CSV İndir</button>
+</div>
+<div class="tablewrap"><table id="auditTable"><tbody><tr><td class="empty">Yükleniyor...</td></tr></tbody></table></div>
+
+<!-- ============ AI & WEB ARAŞTIRMASI ============ -->
+<h2>AI &amp; Web Araştırması (Gemini &amp; DuckDuckGo)</h2>
+<div class="card" style="margin-bottom:14px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div>
+      <strong style="color:#58a6ff;font-size:13px">Gemini API &amp; DuckDuckGo Yapılandırması</strong>
+      <div style="font-size:11px;color:#8b949e;margin-top:2px">Desktop uygulaması ve web istemcileri bu anahtarı görmeden internet destekli çözümlere erişir.</div>
+    </div>
+    <span id="aiKeyBadge" class="badge unknown">Kontrol ediliyor...</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 220px auto;gap:10px;margin-bottom:10px">
+    <div>
+      <label style="display:block;font-size:11px;color:#8b949e;margin-bottom:3px">Gemini API Anahtarı (Maskelenmiş):</label>
+      <input type="password" id="aiApiKeyInput" placeholder="Yeni API Anahtarı girin (AIzaSy...)" style="width:100%;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:6px 10px;border-radius:4px;font-size:12px">
+    </div>
+    <div>
+      <label style="display:block;font-size:11px;color:#8b949e;margin-bottom:3px">Model Seçimi:</label>
+      <select id="aiModelInput" style="width:100%;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:6px 10px;border-radius:4px;font-size:12px">
+        <option value="gemini-1.5-flash">gemini-1.5-flash (Önerilen, Hızlı &amp; Ücretsiz)</option>
+        <option value="gemini-2.0-flash">gemini-2.0-flash (Yeni Nesil Hızlı)</option>
+        <option value="gemini-1.5-pro">gemini-1.5-pro (Detaylı Analiz &amp; Mantık)</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:8px">
+      <button onclick="saveAiConfig()">Kaydet</button>
+      <button class="sec" onclick="testAiResearch()">Web Çözümü Test Et</button>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:18px;align-items:center;margin-top:6px;font-size:12px">
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+      <input type="checkbox" id="aiDdgCheck" checked> DuckDuckGo İnternet Araması Aktif
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+      <input type="checkbox" id="aiWebResearchCheck" checked> Desktop &amp; Web İstemcileri Çözüm Alabilsin (Maskeli &amp; Güvenli)
+    </label>
+  </div>
+
+  <div id="aiTestResult" style="display:none;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:12px;margin-top:12px;font-size:12px;line-height:1.5"></div>
+</div>
+
+<!-- ============ API ANAHTARLARI (RBAC) ============ -->
+<h2>API Anahtarları &amp; Yetki Yönetimi <span class="hint" id="keysCount"></span></h2>
+<div class="toolbar">
+  <button class="blue small" onclick="openNewKeyModal()">+ Yeni API Anahtarı Oluştur</button>
+  <button class="sec small" onclick="refreshKeys()">Yenile</button>
+</div>
+<div class="tablewrap" style="max-height:300px;margin-bottom:20px">
+  <table id="keysTable"><tbody><tr><td class="empty">Yükleniyor...</td></tr></tbody></table>
+</div>
+
+<!-- ============ YENİ ANAHTAR MODAL ============ -->
+<div class="modal-bg" id="keyModalBg" onclick="closeKeyModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:500px">
+    <h2>Yeni API Anahtarı Oluştur</h2>
+    <div class="field">
+      <label>Tanım / İsim</label>
+      <input type="text" id="nkName" placeholder="Örn: Ankara Bölge Teknisyeni">
+    </div>
+    <div class="field">
+      <label>Rol (RBAC)</label>
+      <select id="nkRole" style="width:100%;background:#0d1117;border:1px solid #30363d;color:#c9d1d9;padding:8px 10px;border-radius:6px;font-size:13px">
+        <option value="technician">Teknisyen (Technician)</option>
+        <option value="admin">Yönetici (Admin)</option>
+        <option value="readonly">Salt Okunur (ReadOnly)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Süre (Gün, 0 = Süresiz)</label>
+      <input type="text" id="nkDays" value="90">
+    </div>
+    <div class="modal-actions">
+      <button class="sec" onclick="closeKeyModal()">İptal</button>
+      <button onclick="submitNewKey()">Oluştur</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ VAKA DETAY MODAL ============ -->
 <div class="modal-bg" id="caseModalBg" onclick="closeCaseModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
@@ -174,6 +268,7 @@ const state = {
   caseRows: [], caseSel: new Set(),
   batchRows: [], batchSel: new Set(),
   machineRows: [], machineSel: new Set(),
+  auditRows: [],
   detailCaseId: null,
   detailMachineKey: null
 };
@@ -185,7 +280,8 @@ function switchTab(el){
   state.caseSel.clear();
   document.getElementById('archBtn').style.display = state.archived ? 'none' : '';
   document.getElementById('unarchBtn').style.display = state.archived ? '' : 'none';
-  refreshHelp();
+  refresh();
+}
 
 async function refreshHelp(){
   try {
@@ -234,15 +330,63 @@ async function updateHelpStatus(id, current){
   } catch(e) { alert('Hata: ' + e.message); }
 }
 
-setInterval(refreshHelp, 10000);
-refresh();
+async function refreshAudits(){
+  try {
+    const r = await fetch('/admin/audit').then(x => x.json());
+    state.auditRows = r.items || [];
+    renderAudits();
+  } catch(e){ console.error('audit fetch', e); }
 }
+
+function renderAudits(){
+  const t = document.getElementById('auditTable');
+  if (!t) return;
+  const filter = document.getElementById('auditActionFilter')?.value || '';
+  const rows = (state.auditRows || []).filter(r => !filter || r.action === filter);
+  const cnt = document.getElementById('auditCount');
+  if (cnt) cnt.textContent = `(${rows.length})`;
+  if (!rows.length){ t.innerHTML = '<tr><td class="empty">Audit kaydı yok</td></tr>'; return; }
+  let html = '<thead><tr><th>Zaman</th><th>Makine</th><th>Eylem</th><th>Hedef / Playbook</th><th>Mod Değişimi</th><th>IP</th><th>Not</th></tr></thead><tbody>';
+  for (const r of rows){
+    const act = r.action || 'mode_change';
+    const actCls = act.includes('executed') ? 'resolved' : act.includes('cancelled') ? 'not_resolved' : 'unknown';
+    const modeShift = (r.mode_before || r.mode_after) ? `${esc(r.mode_before || '-')} &rarr; ${esc(r.mode_after || '-')}` : '-';
+    html += `<tr>
+      <td>${esc(r.created_at || '')}</td>
+      <td><code>${esc(r.machine_key || '-')}</code></td>
+      <td><span class="badge ${actCls}">${esc(act)}</span></td>
+      <td><code>${esc(r.target_id || '-')}</code></td>
+      <td>${modeShift}</td>
+      <td>${esc(r.ip_address || '-')}</td>
+      <td class="clip">${esc(r.note || '-')}</td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+function exportAuditCsv(){
+  if (!state.auditRows || !state.auditRows.length) { alert('İndirilecek audit kaydı yok'); return; }
+  const cols = ['id', 'created_at', 'machine_key', 'action', 'target_id', 'mode_before', 'mode_after', 'ip_address', 'note'];
+  let csv = cols.join(';') + '\r\n';
+  for (const r of state.auditRows){
+    csv += cols.map(c => `"${(r[c] ?? '').toString().replace(/"/g, '""')}"`).join(';') + '\r\n';
+  }
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `yapair-audit-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+}
+
+setInterval(refreshHelp, 10000);
+setInterval(refreshAudits, 15000);
 
 async function refresh(){
   try {
     const [health, stats] = await Promise.all([
       fetch('/health').then(r => r.json()),
-      fetch('/admin/stats' + (state.archived ? '?archived=1' : '')).then(r => r.json())
+      fetch('/admin/stats' + (state.archived ? '?archived=1' : '')).then(r => r.json()),
+      refreshAudits()
     ]);
     renderHealth(health);
     renderStats(stats);
@@ -848,8 +992,185 @@ async function updateHelpStatus(id, current){
   } catch(e) { alert('Hata: ' + e.message); }
 }
 
-setInterval(refreshHelp, 10000);
+// ============ AI & WEB ARAŞTIRMASI SCRIPTLERI ============
+async function refreshAiConfig(){
+  try {
+    const r = await fetch('/admin/ai-config').then(x => x.json());
+    const badge = document.getElementById('aiKeyBadge');
+    if (r.has_key) {
+      badge.className = 'badge resolved';
+      badge.textContent = 'Aktif: ' + (r.masked_key || 'Tanımlı');
+    } else {
+      badge.className = 'badge not_resolved';
+      badge.textContent = 'Anahtar Eksik (Web Çözümü Kapalı)';
+    }
+    if (r.model) document.getElementById('aiModelInput').value = r.model;
+    document.getElementById('aiDdgCheck').checked = r.enable_duckduckgo !== false;
+    document.getElementById('aiWebResearchCheck').checked = r.enable_web_research !== false;
+  } catch(e) { console.error('ai config fetch', e); }
+}
+
+async function saveAiConfig(){
+  const key = document.getElementById('aiApiKeyInput').value.trim();
+  const model = document.getElementById('aiModelInput').value;
+  const enable_duckduckgo = document.getElementById('aiDdgCheck').checked;
+  const enable_web_research = document.getElementById('aiWebResearchCheck').checked;
+
+  try {
+    const r = await fetch('/admin/ai-config', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        gemini_api_key: key || null,
+        model,
+        enable_duckduckgo,
+        enable_web_research
+      })
+    });
+    const j = await r.json();
+    if (!r.ok){ alert('Hata: ' + JSON.stringify(j)); return; }
+    document.getElementById('aiApiKeyInput').value = '';
+    alert('AI ve Web Araştırması yapılandırması başarıyla kaydedildi! Desktop ve Web istemcileri artık güvenli şekilde çözümleri alabilir.');
+    await refreshAiConfig();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+async function testAiResearch(){
+  const resDiv = document.getElementById('aiTestResult');
+  resDiv.style.display = 'block';
+  resDiv.innerHTML = '<span style="color:#58a6ff">DuckDuckGo aranıyor ve Gemini analiz ediyor...</span>';
+
+  try {
+    const r = await fetch('/admin/research', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ query: 'windows update error 0x80070002' })
+    });
+    const j = await r.json();
+    if (!r.ok) {
+      resDiv.innerHTML = `<span style="color:#f85149">Hata: ${esc(j.message || j.error || 'Bilinmeyen hata')}</span>`;
+      return;
+    }
+
+    let srcHtml = '';
+    if (j.sources && j.sources.length) {
+      srcHtml = '<div style="margin-top:10px;color:#8b949e"><strong>Web Kaynakları:</strong><ul style="margin:4px 0 0 16px;padding:0">';
+      for (const s of j.sources) {
+        srcHtml += `<li><strong>${esc(s.title)}</strong>: ${esc(s.snippet)}</li>`;
+      }
+      srcHtml += '</ul></div>';
+    }
+
+    resDiv.innerHTML = `<div style="color:#3fb950;font-weight:600;margin-bottom:6px">Bağlantı Başarılı - Gemini Çözümü:</div><div style="white-space:pre-wrap">${esc(j.answer || '')}</div>${srcHtml}`;
+  } catch(e) {
+    resDiv.innerHTML = `<span style="color:#f85149">Hata: ${esc(e.message)}</span>`;
+  }
+}
+
+// ============ API ANAHTARLARI (RBAC) SCRIPTLERI ============
+async function refreshKeys(){
+  try {
+    const r = await fetch('/admin/auth/keys').then(x => x.json());
+    state.keysRows = Array.isArray(r) ? r : [];
+    renderKeys();
+  } catch(e) { console.error('keys fetch', e); }
+}
+
+function renderKeys(){
+  const t = document.getElementById('keysTable');
+  if (!t) return;
+  const rows = state.keysRows || [];
+  const cnt = document.getElementById('keysCount');
+  if (cnt) cnt.textContent = `(${rows.length})`;
+  if (!rows.length){ t.innerHTML = '<tr><td class="empty">API Anahtarı bulunamadı</td></tr>'; return; }
+
+  let html = '<thead><tr><th>Anahtar ID</th><th>Tanım</th><th>Rol</th><th>Oluşturuldu</th><th>Bitiş</th><th>Durum</th><th>İşlemler</th></tr></thead><tbody>';
+  for (const k of rows){
+    const rev = !!k.revoked;
+    const stCls = rev ? 'not_resolved' : 'resolved';
+    const stText = rev ? 'İptal Edildi' : 'Aktif';
+    const roleCls = (k.role === 'admin') ? 'not_resolved' : (k.role === 'technician') ? 'contradicted' : 'unknown';
+
+    html += `<tr>
+      <td><code>${esc(k.key_id)}</code></td>
+      <td><strong>${esc(k.name || '')}</strong></td>
+      <td><span class="badge ${roleCls}">${esc((k.role || '').toUpperCase())}</span></td>
+      <td>${esc((k.created_at || '').substring(0,19).replace('T',' '))}</td>
+      <td>${esc(k.expires_at ? k.expires_at.substring(0,19).replace('T',' ') : 'Süresiz')}</td>
+      <td><span class="badge ${stCls}">${esc(stText)}</span></td>
+      <td style="white-space:nowrap">
+        ${!rev ? `<button class="sec small" onclick="rotateKey('${esc(k.key_id)}')">Döndür</button> ` : ''}
+        ${!rev ? `<button class="amber small" onclick="revokeKey('${esc(k.key_id)}')">İptal</button> ` : ''}
+        <button class="red small" onclick="deleteApiKey('${esc(k.key_id)}')">Sil</button>
+      </td>
+    </tr>`;
+  }
+  t.innerHTML = html + '</tbody>';
+}
+
+function openNewKeyModal(){ document.getElementById('keyModalBg').classList.add('show'); }
+function closeKeyModal(e){ if (!e || e.target === document.getElementById('keyModalBg')) document.getElementById('keyModalBg').classList.remove('show'); }
+
+async function submitNewKey(){
+  const name = document.getElementById('nkName').value.trim();
+  const role = document.getElementById('nkRole').value;
+  const days = parseInt(document.getElementById('nkDays').value, 10) || null;
+  if (!name){ alert('Lütfen bir tanım/isim girin.'); return; }
+
+  try {
+    const r = await fetch('/admin/auth/keys/create', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name, role, expires_days: days })
+    });
+    const j = await r.json();
+    if (!r.ok){ alert('Hata: ' + JSON.stringify(j)); return; }
+    closeKeyModal();
+    alert('Yeni API Anahtarı Oluşturuldu!\n\nBu anahtar sadece BİR KEZ gösterilir. Güvenli bir yere kopyalayın:\n\n' + j.raw_key);
+    await refreshKeys();
+  } catch(e){ alert('Hata: ' + e.message); }
+}
+
+async function rotateKey(keyId){
+  if (!confirm(`'${keyId}' kodlu anahtarı döndürmek istiyor musunuz? Eski anahtar anında geçersiz kılınacaktır.`)) return;
+  try {
+    const r = await fetch('/admin/auth/keys/rotate', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ key_id: keyId })
+    });
+    const j = await r.json();
+    if (!r.ok){ alert('Hata: ' + JSON.stringify(j)); return; }
+    alert('Anahtar başarıyla döndürüldü!\nYeni gizli anahtarınız:\n\n' + j.raw_key);
+    await refreshKeys();
+  } catch(e){ alert('Hata: ' + e.message); }
+}
+
+async function revokeKey(keyId){
+  if (!confirm(`'${keyId}' kodlu anahtarı iptal etmek istediğinize emin misiniz?`)) return;
+  try {
+    const r = await fetch('/admin/auth/keys/revoke', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ key_id: keyId })
+    });
+    if (!r.ok){ alert('Hata: ' + await r.text()); return; }
+    await refreshKeys();
+  } catch(e){ alert('Hata: ' + e.message); }
+}
+
+async function deleteApiKey(keyId){
+  if (!confirm(`'${keyId}' kodlu API anahtarını tamamen silmek istiyor musunuz? Bu işlem geri alınamaz.`)) return;
+  try {
+    const r = await fetch('/admin/auth/keys/delete', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ key_id: keyId })
+    });
+    if (!r.ok){ alert('Hata: ' + await r.text()); return; }
+    await refreshKeys();
+  } catch(e){ alert('Hata: ' + e.message); }
+}
+
+refreshHelp();
+refreshAiConfig();
+refreshKeys();
 refresh();
+setInterval(refreshHelp, 10000);
 setInterval(refresh, 20000);
 </script>
 </body>

@@ -330,5 +330,44 @@ public static class PlaybookCatalog
             ],
             Rollback = "Önceki sürücü paketi/bağlantısı kaydedilir; kernel sürücüsünde tam geri alma garanti değildir.",
         },
+        new RepairPlaybook
+        {
+            Id = "audio.restart.v1",
+            Title = "Windows ses hizmetlerini kontrollü yeniden başlat",
+            Domain = Contracts.HealthDomain.Audio,
+            Risk = PlaybookRisk.R1,
+            RequiresApproval = true,
+            Summary = "Audiosrv ve AudioEndpointBuilder hizmetlerini durdurup sırayla başlatır. Ses çıkışında kısa süreli kesinti olabilir.",
+            Steps = ["services.inspect:Audiosrv", "services.restart:AudioEndpointBuilder", "services.restart:Audiosrv"],
+            Preconditions = ["Ses servisleri mevcut", "Kullanıcı onayı"],
+            PostChecks = ["Audiosrv durumu Running", "AudioEndpointBuilder durumu Running"],
+            Rollback = "Hizmet yeniden başlatma yan etkileri geri alınamaz.",
+        },
+        new RepairPlaybook
+        {
+            Id = "printers.queue.clear.v1",
+            Title = "Yazdırma kuyruğunu ve takılmış işleri temizle",
+            Domain = Contracts.HealthDomain.Printers,
+            Risk = PlaybookRisk.R1,
+            RequiresApproval = true,
+            Summary = "Spooler hizmetini durdurur, kuyruk klasöründeki geçici iş dosyalarını siler ve Spooler'ı yeniden başlatır. Kuyrukta bekleyen tüm belgeler silinir.",
+            Steps = ["services.stop:Spooler", "printers.purge_spool_files", "services.start:Spooler"],
+            Preconditions = ["Spooler hizmeti mevcut", "Kullanıcı kuyruk silinmesini onayladı"],
+            PostChecks = ["Spooler durumu Running", "Yazıcı kuyruğu boş"],
+            Rollback = "Silinen yazdırma işleri geri alınamaz; kullanıcı belgeleri tekrar yazdırmalıdır.",
+        },
+        new RepairPlaybook
+        {
+            Id = "network.adapter.reset.v1",
+            Title = "Ağ bağdaştırıcısını yeniden başlat",
+            Domain = Contracts.HealthDomain.Network,
+            Risk = PlaybookRisk.R2,
+            RequiresApproval = true,
+            Summary = "Etkin ağ bağdaştırıcısını devre dışı bırakıp tekrar etkinleştirir. Ağ bağlantısı kısa süreliğine kopacaktır.",
+            Steps = ["network.inspect_adapters", "network.restart_adapter"],
+            Preconditions = ["Etkin ağ bağdaştırıcısı mevcut", "Kullanıcı bağlantı kesintisini onayladı"],
+            PostChecks = ["Bağdaştırıcı durumu Up", "Varsayılan ağ geçidi erişilebilir"],
+            Rollback = "Bağdaştırıcı tekrar etkinleştirilir.",
+        },
     ];
 }

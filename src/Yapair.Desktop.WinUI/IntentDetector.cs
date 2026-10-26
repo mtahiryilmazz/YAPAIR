@@ -1,16 +1,16 @@
-﻿namespace Yapair.Desktop.WinUI;
+namespace Yapair.Desktop.WinUI;
 
 public static class IntentDetector
 {
     private static readonly (string[] Keywords, string Domain)[] Map =
     {
-        (new[] { "bluetooth", "kablosuz" }, "bluetooth"),
-        (new[] { "yazici", "yazdÄ±r", "yazdir", "printer", "spooler" }, "printers"),
-        (new[] { "ag ", "aÄŸ", "internet", "wifi", "ethernet", "baglanti", "baÄŸlantÄ±" }, "network"),
-        (new[] { "ses", "hoparlor", "hoparlÃ¶r", "mikrofon", "audio" }, "audio"),
-        (new[] { "usb", "aygit", "aygÄ±t", "surucu", "sÃ¼rÃ¼cÃ¼", "driver" }, "devices"),
-        (new[] { "guncelleme", "gÃ¼ncelleme", "update" }, "windows_update"),
-        (new[] { "uac", "yonetici", "yÃ¶netici", "izin", "yetki", "firewall" }, "security")
+        (new[] { "bluetooth", "kablosuz", "bt" }, "bluetooth"),
+        (new[] { "yazici", "yazıcı", "yazdir", "yazdır", "printer", "spooler", "kuyruk" }, "printers"),
+        (new[] { "ag ", "ağ", "internet", "wifi", "wi-fi", "ethernet", "baglanti", "bağlantı", "ip", "dns" }, "network"),
+        (new[] { "ses", "hoparlor", "hoparlör", "mikrofon", "audio", "sound", "kulaklik", "kulaklık" }, "audio"),
+        (new[] { "usb", "aygit", "aygıt", "surucu", "sürücü", "driver", "pnp", "cihaz" }, "devices"),
+        (new[] { "guncelleme", "güncelleme", "update", "reboot", "yeniden baslat" }, "windows_update"),
+        (new[] { "uac", "yonetici", "yönetici", "izin", "yetki", "firewall", "guvenlik", "güvenlik" }, "security")
     };
 
     public static string? Detect(string message)

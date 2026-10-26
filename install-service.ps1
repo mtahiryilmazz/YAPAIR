@@ -1,11 +1,15 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) { Write-Host "Bu script YONETICI olarak calistirilmalidir!" -ForegroundColor Red; exit 1 }
 
-$repo = "C:\Users\YILMAZ\Documents\deepseek-harness\default-workspace\yapair"
-$dll = "$repo\src\Yapair.Api\bin\Debug\net10.0\Yapair.Api.dll"
-$contentRoot = "$repo\src\Yapair.Api"
-if (-not (Test-Path $dll)) { Write-Host "Once build: dotnet build src\Yapair.Api\Yapair.Api.csproj" -ForegroundColor Red; exit 1 }
+$repo = $PSScriptRoot
+$dll = "$repo\publish\api\Yapair.Api.dll"
+$contentRoot = "$repo\publish\api"
+if (-not (Test-Path $dll)) {
+    $dll = "$repo\src\Yapair.Api\bin\Debug\net10.0\Yapair.Api.dll"
+    $contentRoot = "$repo\src\Yapair.Api"
+}
+if (-not (Test-Path $dll)) { Write-Host "Once build veya publish: dotnet build src\Yapair.Api\Yapair.Api.csproj" -ForegroundColor Red; exit 1 }
 
 $dotnetExe = (Get-Command dotnet).Source
 $binPath = "`"$dotnetExe`" exec `"$dll`" --contentRoot `"$contentRoot`" --urls http://localhost:5080"
