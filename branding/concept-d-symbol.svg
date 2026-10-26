@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>YAPAIR AI Wrench Monogram</title>
+  <rect width="256" height="256" rx="56" fill="#0c1017"/>
+  <!-- Minimalist Precision Y with Negative Space Repair Key / Wrench head -->
+  <path d="M 64 52 L 108 52 L 128 92 L 148 52 L 192 52 L 148 132 L 148 204 L 108 204 L 108 132 Z" fill="#2563eb"/>
+  <!-- AI Spark & Tool calibration notch carved in negative space -->
+  <circle cx="128" cy="72" r="14" fill="#0c1017"/>
+  <polygon points="128,58 134,72 148,72 136,80 140,94 128,84 116,94 120,80 108,72 122,72" fill="#38bdf8"/>
+  <rect x="120" y="152" width="16" height="36" rx="8" fill="#38bdf8"/>
+</svg>

@@ -1,0 +1,213 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="840" viewBox="0 0 1600 840"><rect width="1600" height="840" fill="#f7f7f4"/><text x="60" y="78" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="40" font-weight="700" fill="#161616">Logo concepts</text><text x="60" y="116" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="20" fill="#6b6b6b">Concepts for review — pick a direction (or tell me what you like in each).</text><rect x="60" y="150" width="474.667" height="630" rx="18" fill="#fff" stroke="#161616" stroke-width="2"/><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="90" y="190" width="414.667" height="300" preserveAspectRatio="xMidYMid meet">
+  <!-- YAPAIR Concept A: Neural Chevron Monogram (Y + AI Spark + Repair Shield) -->
+  <defs>
+    <linearGradient id="c0-gradA" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D2FF"/>
+      <stop offset="100%" stop-color="#3A7BD5"/>
+    </linearGradient>
+  </defs>
+  <!-- Background soft dark disc for contrast -->
+  <rect width="256" height="256" rx="56" fill="#0D1117"/>
+  <!-- Left Wing of Y -->
+  <path d="M 52 56 L 96 56 L 128 116 L 96 116 Z" fill="url(#c0-gradA)"/>
+  <!-- Right Wing of Y (Repair Hex Accent) -->
+  <path d="M 204 56 L 160 56 L 128 116 L 160 116 Z" fill="#00E5FF"/>
+  <!-- Central Stem of Y (Shield Bolt) -->
+  <path d="M 114 126 L 142 126 L 142 188 L 128 206 L 114 188 Z" fill="url(#c0-gradA)"/>
+  <!-- AI Spark / Core Diamond in negative center -->
+  <polygon points="128,82 140,102 128,122 116,102" fill="#FFFFFF"/>
+</svg>
+</g><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="90" y="516" width="64" height="64" preserveAspectRatio="xMidYMid meet">
+  <!-- YAPAIR Concept A: Neural Chevron Monogram (Y + AI Spark + Repair Shield) -->
+  <defs>
+    <linearGradient id="s064-gradA" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D2FF"/>
+      <stop offset="100%" stop-color="#3A7BD5"/>
+    </linearGradient>
+  </defs>
+  <!-- Background soft dark disc for contrast -->
+  <rect width="256" height="256" rx="56" fill="#0D1117"/>
+  <!-- Left Wing of Y -->
+  <path d="M 52 56 L 96 56 L 128 116 L 96 116 Z" fill="url(#s064-gradA)"/>
+  <!-- Right Wing of Y (Repair Hex Accent) -->
+  <path d="M 204 56 L 160 56 L 128 116 L 160 116 Z" fill="#00E5FF"/>
+  <!-- Central Stem of Y (Shield Bolt) -->
+  <path d="M 114 126 L 142 126 L 142 188 L 128 206 L 114 188 Z" fill="url(#s064-gradA)"/>
+  <!-- AI Spark / Core Diamond in negative center -->
+  <polygon points="128,82 140,102 128,122 116,102" fill="#FFFFFF"/>
+</svg>
+</g><text x="122" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">64px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="180" y="548" width="32" height="32" preserveAspectRatio="xMidYMid meet">
+  <!-- YAPAIR Concept A: Neural Chevron Monogram (Y + AI Spark + Repair Shield) -->
+  <defs>
+    <linearGradient id="s032-gradA" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D2FF"/>
+      <stop offset="100%" stop-color="#3A7BD5"/>
+    </linearGradient>
+  </defs>
+  <!-- Background soft dark disc for contrast -->
+  <rect width="256" height="256" rx="56" fill="#0D1117"/>
+  <!-- Left Wing of Y -->
+  <path d="M 52 56 L 96 56 L 128 116 L 96 116 Z" fill="url(#s032-gradA)"/>
+  <!-- Right Wing of Y (Repair Hex Accent) -->
+  <path d="M 204 56 L 160 56 L 128 116 L 160 116 Z" fill="#00E5FF"/>
+  <!-- Central Stem of Y (Shield Bolt) -->
+  <path d="M 114 126 L 142 126 L 142 188 L 128 206 L 114 188 Z" fill="url(#s032-gradA)"/>
+  <!-- AI Spark / Core Diamond in negative center -->
+  <polygon points="128,82 140,102 128,122 116,102" fill="#FFFFFF"/>
+</svg>
+</g><text x="196" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">32px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="238" y="564" width="16" height="16" preserveAspectRatio="xMidYMid meet">
+  <!-- YAPAIR Concept A: Neural Chevron Monogram (Y + AI Spark + Repair Shield) -->
+  <defs>
+    <linearGradient id="s016-gradA" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D2FF"/>
+      <stop offset="100%" stop-color="#3A7BD5"/>
+    </linearGradient>
+  </defs>
+  <!-- Background soft dark disc for contrast -->
+  <rect width="256" height="256" rx="56" fill="#0D1117"/>
+  <!-- Left Wing of Y -->
+  <path d="M 52 56 L 96 56 L 128 116 L 96 116 Z" fill="url(#s016-gradA)"/>
+  <!-- Right Wing of Y (Repair Hex Accent) -->
+  <path d="M 204 56 L 160 56 L 128 116 L 160 116 Z" fill="#00E5FF"/>
+  <!-- Central Stem of Y (Shield Bolt) -->
+  <path d="M 114 126 L 142 126 L 142 188 L 128 206 L 114 188 Z" fill="url(#s016-gradA)"/>
+  <!-- AI Spark / Core Diamond in negative center -->
+  <polygon points="128,82 140,102 128,122 116,102" fill="#FFFFFF"/>
+</svg>
+</g><text x="246" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">16px</text><text x="90.0" y="636" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" font-weight="700" fill="#161616">A · Concept A: Neural Shield</text><text x="90.0" y="664" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="15" font-weight="700" fill="#161616" letter-spacing="1.5">RECOMMENDED</text><text x="90.0" y="698" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">Y-monogram with AI Spark and IT Shield</text><rect x="562.667" y="150" width="474.667" height="630" rx="18" fill="#fff" stroke="#e4e4e0" stroke-width="1"/><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="592.667" y="190" width="414.667" height="300" preserveAspectRatio="xMidYMid meet">
+  <!-- YAPAIR Concept B: Cyber Repair Hexagon (Self-Healing Loop) -->
+  <defs>
+    <linearGradient id="c1-gradB" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#090D16"/>
+  <!-- Outer Hexagon ring -->
+  <path d="M 128 36 L 208 82 L 208 174 L 128 220 L 48 174 L 48 82 Z" fill="none" stroke="url(#c1-gradB)" stroke-width="16" stroke-linejoin="round"/>
+  <!-- Inner Y-junction node connecting all 3 corners -->
+  <path d="M 128 128 L 128 42 M 128 128 L 202 170 M 128 128 L 54 170" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round"/>
+  <!-- Center AI Core Node -->
+  <circle cx="128" cy="128" r="16" fill="#10B981"/>
+  <circle cx="128" cy="128" r="8" fill="#FFFFFF"/>
+</svg>
+</g><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="592.667" y="516" width="64" height="64" preserveAspectRatio="xMidYMid meet">
+  <!-- YAPAIR Concept B: Cyber Repair Hexagon (Self-Healing Loop) -->
+  <defs>
+    <linearGradient id="s164-gradB" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#090D16"/>
+  <!-- Outer Hexagon ring -->
+  <path d="M 128 36 L 208 82 L 208 174 L 128 220 L 48 174 L 48 82 Z" fill="none" stroke="url(#s164-gradB)" stroke-width="16" stroke-linejoin="round"/>
+  <!-- Inner Y-junction node connecting all 3 corners -->
+  <path d="M 128 128 L 128 42 M 128 128 L 202 170 M 128 128 L 54 170" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round"/>
+  <!-- Center AI Core Node -->
+  <circle cx="128" cy="128" r="16" fill="#10B981"/>
+  <circle cx="128" cy="128" r="8" fill="#FFFFFF"/>
+</svg>
+</g><text x="624.667" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">64px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="682.667" y="548" width="32" height="32" preserveAspectRatio="xMidYMid meet">
+  <!-- YAPAIR Concept B: Cyber Repair Hexagon (Self-Healing Loop) -->
+  <defs>
+    <linearGradient id="s132-gradB" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#090D16"/>
+  <!-- Outer Hexagon ring -->
+  <path d="M 128 36 L 208 82 L 208 174 L 128 220 L 48 174 L 48 82 Z" fill="none" stroke="url(#s132-gradB)" stroke-width="16" stroke-linejoin="round"/>
+  <!-- Inner Y-junction node connecting all 3 corners -->
+  <path d="M 128 128 L 128 42 M 128 128 L 202 170 M 128 128 L 54 170" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round"/>
+  <!-- Center AI Core Node -->
+  <circle cx="128" cy="128" r="16" fill="#10B981"/>
+  <circle cx="128" cy="128" r="8" fill="#FFFFFF"/>
+</svg>
+</g><text x="698.667" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">32px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="740.667" y="564" width="16" height="16" preserveAspectRatio="xMidYMid meet">
+  <!-- YAPAIR Concept B: Cyber Repair Hexagon (Self-Healing Loop) -->
+  <defs>
+    <linearGradient id="s116-gradB" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#090D16"/>
+  <!-- Outer Hexagon ring -->
+  <path d="M 128 36 L 208 82 L 208 174 L 128 220 L 48 174 L 48 82 Z" fill="none" stroke="url(#s116-gradB)" stroke-width="16" stroke-linejoin="round"/>
+  <!-- Inner Y-junction node connecting all 3 corners -->
+  <path d="M 128 128 L 128 42 M 128 128 L 202 170 M 128 128 L 54 170" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round"/>
+  <!-- Center AI Core Node -->
+  <circle cx="128" cy="128" r="16" fill="#10B981"/>
+  <circle cx="128" cy="128" r="8" fill="#FFFFFF"/>
+</svg>
+</g><text x="748.667" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">16px</text><text x="592.6666666666667" y="636" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" font-weight="700" fill="#161616">B · Concept B: Self-Healing Loop</text><text x="592.6666666666667" y="670" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">Hexagonal loop with AI repair core node</text><rect x="1065.33" y="150" width="474.667" height="630" rx="18" fill="#fff" stroke="#e4e4e0" stroke-width="1"/><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="1095.33" y="190" width="414.667" height="300" preserveAspectRatio="xMidYMid meet">
+  <!-- YAPAIR Concept C: Geometric Dynamic Wing / Precision Diagonal Repair -->
+  <defs>
+    <linearGradient id="c2-gradC" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="50%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#0B0F19"/>
+  <!-- Left dynamic angular slash -->
+  <path d="M 64 54 L 110 54 L 146 130 L 100 130 Z" fill="#6366F1"/>
+  <!-- Right dynamic angular slash forming the Y intersection -->
+  <path d="M 192 54 L 146 54 L 98 156 L 126 210 L 158 210 L 192 138 Z" fill="url(#c2-gradC)"/>
+  <!-- AI Precision indicator dot -->
+  <circle cx="168" cy="80" r="10" fill="#38BDF8"/>
+</svg>
+</g><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="1095.33" y="516" width="64" height="64" preserveAspectRatio="xMidYMid meet">
+  <!-- YAPAIR Concept C: Geometric Dynamic Wing / Precision Diagonal Repair -->
+  <defs>
+    <linearGradient id="s264-gradC" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="50%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#0B0F19"/>
+  <!-- Left dynamic angular slash -->
+  <path d="M 64 54 L 110 54 L 146 130 L 100 130 Z" fill="#6366F1"/>
+  <!-- Right dynamic angular slash forming the Y intersection -->
+  <path d="M 192 54 L 146 54 L 98 156 L 126 210 L 158 210 L 192 138 Z" fill="url(#s264-gradC)"/>
+  <!-- AI Precision indicator dot -->
+  <circle cx="168" cy="80" r="10" fill="#38BDF8"/>
+</svg>
+</g><text x="1127.33" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">64px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="1185.33" y="548" width="32" height="32" preserveAspectRatio="xMidYMid meet">
+  <!-- YAPAIR Concept C: Geometric Dynamic Wing / Precision Diagonal Repair -->
+  <defs>
+    <linearGradient id="s232-gradC" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="50%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#0B0F19"/>
+  <!-- Left dynamic angular slash -->
+  <path d="M 64 54 L 110 54 L 146 130 L 100 130 Z" fill="#6366F1"/>
+  <!-- Right dynamic angular slash forming the Y intersection -->
+  <path d="M 192 54 L 146 54 L 98 156 L 126 210 L 158 210 L 192 138 Z" fill="url(#s232-gradC)"/>
+  <!-- AI Precision indicator dot -->
+  <circle cx="168" cy="80" r="10" fill="#38BDF8"/>
+</svg>
+</g><text x="1201.33" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">32px</text><g><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" x="1243.33" y="564" width="16" height="16" preserveAspectRatio="xMidYMid meet">
+  <!-- YAPAIR Concept C: Geometric Dynamic Wing / Precision Diagonal Repair -->
+  <defs>
+    <linearGradient id="s216-gradC" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="50%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="56" fill="#0B0F19"/>
+  <!-- Left dynamic angular slash -->
+  <path d="M 64 54 L 110 54 L 146 130 L 100 130 Z" fill="#6366F1"/>
+  <!-- Right dynamic angular slash forming the Y intersection -->
+  <path d="M 192 54 L 146 54 L 98 156 L 126 210 L 158 210 L 192 138 Z" fill="url(#s216-gradC)"/>
+  <!-- AI Precision indicator dot -->
+  <circle cx="168" cy="80" r="10" fill="#38BDF8"/>
+</svg>
+</g><text x="1251.33" y="600" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="12" fill="#8a8a8a" text-anchor="middle">16px</text><text x="1095.3333333333335" y="636" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="26" font-weight="700" fill="#161616">C · Concept C: Precision Wing</text><text x="1095.3333333333335" y="670" font-family="system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="19" fill="#555">Dynamic tech monogram with automation slash</text></svg>

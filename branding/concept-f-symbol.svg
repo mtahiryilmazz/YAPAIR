@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>YAPAIR Quantum Diamond Pair</title>
+  <rect width="256" height="256" rx="56" fill="#090d16"/>
+  <!-- Upper Left Diamond (AI Intelligence) -->
+  <polygon points="106,48 142,78 106,108 70,78" fill="#3b82f6"/>
+  <!-- Upper Right Diamond (Automation) -->
+  <polygon points="150,48 186,78 150,108 114,78" fill="#06b6d4" opacity="0.9"/>
+  <!-- Converging Y-Base Repair Anchor -->
+  <polygon points="128,114 164,144 128,212 92,144" fill="#10b981"/>
+  <!-- Center Synthesis Core -->
+  <polygon points="128,88 140,100 128,112 116,100" fill="#ffffff"/>
+</svg>

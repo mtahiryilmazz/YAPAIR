@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- YAPAIR Concept A: Neural Chevron Monogram (Y + AI Spark + Repair Shield) -->
+  <defs>
+    <linearGradient id="gradA" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D2FF"/>
+      <stop offset="100%" stop-color="#3A7BD5"/>
+    </linearGradient>
+  </defs>
+  <!-- Background soft dark disc for contrast -->
+  <rect width="256" height="256" rx="56" fill="#0D1117"/>
+  <!-- Left Wing of Y -->
+  <path d="M 52 56 L 96 56 L 128 116 L 96 116 Z" fill="url(#gradA)"/>
+  <!-- Right Wing of Y (Repair Hex Accent) -->
+  <path d="M 204 56 L 160 56 L 128 116 L 160 116 Z" fill="#00E5FF"/>
+  <!-- Central Stem of Y (Shield Bolt) -->
+  <path d="M 114 126 L 142 126 L 142 188 L 128 206 L 114 188 Z" fill="url(#gradA)"/>
+  <!-- AI Spark / Core Diamond in negative center -->
+  <polygon points="128,82 140,102 128,122 116,102" fill="#FFFFFF"/>
+</svg>

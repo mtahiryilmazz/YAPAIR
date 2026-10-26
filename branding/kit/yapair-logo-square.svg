@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><title>YAPAIR</title><g transform="translate(20.48 20.48) scale(0.84)">
+  
+  <rect width="256" height="256" rx="56" fill="#0b0f19"/>
+  <!-- Circular Repair Track / Orbit -->
+  <circle cx="128" cy="128" r="76" fill="none" stroke="#1e293b" stroke-width="24"/>
+  <!-- AI Healing Arc (Electric Cyan) -->
+  <path d="M 128 52 A 76 76 0 1 1 52 128" fill="none" stroke="#00f2fe" stroke-width="24" stroke-linecap="round"/>
+  <!-- Minimalist Clean Center Y node -->
+  <path d="M 96 98 L 128 132 L 160 98 M 128 132 L 128 168" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Pulse Spark -->
+  <circle cx="128" cy="52" r="14" fill="#4facfe"/>
+  <circle cx="128" cy="52" r="7" fill="#ffffff"/>
+</g></svg>
