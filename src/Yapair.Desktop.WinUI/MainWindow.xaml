@@ -25,6 +25,9 @@
         </Border>
         <TextBlock Text="YAPAIR" Foreground="#c9d1d9" FontWeight="SemiBold"
                    VerticalAlignment="Center" FontSize="13"/>
+        <Border Background="#21262d" BorderBrush="#30363d" BorderThickness="1" CornerRadius="4" Padding="4,1" VerticalAlignment="Center">
+          <TextBlock Text="v1.0.0" Foreground="#8b949e" FontSize="10" FontWeight="SemiBold"/>
+        </Border>
         <Border x:Name="ModeBadgeBorder" Background="#0d1d3a" BorderBrush="#1f6feb" BorderThickness="1"
                 CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Margin="4,0,0,0"
                 ToolTipService.ToolTip="Aktif Yetki Seviyesi">

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,8 +6,8 @@
 
     <AssemblyName>yapair</AssemblyName>
     <RootNamespace>Yapair.Cli</RootNamespace>
-    <Version>0.1.0</Version>
-    <Description>YAPAIR read-only diagnostic CLI (Sprint 1).</Description>
+    <Version>1.0.0</Version>
+    <Description>YAPAIR read-only diagnostic &amp; autonomous repair CLI.</Description>
   </PropertyGroup>
 
   <ItemGroup>

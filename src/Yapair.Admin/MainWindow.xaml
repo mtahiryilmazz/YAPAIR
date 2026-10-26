@@ -25,6 +25,9 @@
           <TextBlock Text="Y" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
         </Border>
         <TextBlock Text="YAPAIR Admin Konsolu" Foreground="#c9d1d9" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="13"/>
+        <Border Background="#21262d" BorderBrush="#30363d" BorderThickness="1" CornerRadius="4" Padding="4,1" VerticalAlignment="Center">
+          <TextBlock Text="v1.0.0" Foreground="#a855f7" FontSize="10" FontWeight="SemiBold"/>
+        </Border>
 
         <!-- API / Sunucu durum rozeti: tıklanınca sunucu menüsü açılır -->
         <Button x:Name="ApiStatusBadge" Background="#0d2a14" BorderBrush="#238636" BorderThickness="1"

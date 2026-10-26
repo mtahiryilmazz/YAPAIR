@@ -10,5 +10,12 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0+release</InformationalVersion>
+    <Product>YAPAIR - Autonomous AI Repair &amp; IT Management Suite</Product>
+    <Company>YAPAIR</Company>
+    <Copyright>Copyright © 2026 M. Tahir YILMAZ. All rights reserved.</Copyright>
   </PropertyGroup>
 </Project>
