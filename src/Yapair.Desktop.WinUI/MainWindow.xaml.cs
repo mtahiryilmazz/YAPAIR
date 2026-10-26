@@ -26,7 +26,6 @@ public sealed partial class MainWindow : Window
     private string? _posFile;
     private bool _isPinned;
     public bool IsExplicitExit { get; set; } = false;
-    private bool _updatingModeCombo;
     private DispatcherTimer? _repairPollTimer;
 
     public ObservableCollection<ChatMessage> Messages { get; } = new();
@@ -401,23 +400,6 @@ public sealed partial class MainWindow : Window
 
     private void UpdateModeBadge()
     {
-        if (ModeComboBox != null)
-        {
-            _updatingModeCombo = true;
-            try
-            {
-                var idx = (int)_mode;
-                if (idx >= 0 && idx < ModeComboBox.Items.Count)
-                {
-                    ModeComboBox.SelectedIndex = idx;
-                }
-            }
-            finally
-            {
-                _updatingModeCombo = false;
-            }
-        }
-
         if (ModeBadgeBorder != null && ModeBadgeText != null && ModeBadgeDot != null)
         {
             var (label, fgHex, bgHex, borderHex) = _mode switch
@@ -437,122 +419,6 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async void ModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (_updatingModeCombo || ModeComboBox == null || ModeComboBox.SelectedItem is not ComboBoxItem item) return;
-        if (!int.TryParse(item.Tag?.ToString(), out var targetIdx)) return;
-
-        var targetMode = (AuthorizationMode)targetIdx;
-        if (targetMode == _mode) return;
-
-        if (targetMode >= AuthorizationMode.AutoLowRisk) // R2 or R3 requires dual approval PIN
-        {
-            var pinBox = new TextBox { PlaceholderText = "6 haneli onay kodu (PIN)...", MaxLength = 6 };
-            var requestBtn = new Button { Content = "Onay Kodu Talep Et", FontSize = 12 };
-            var statusBlockText = new TextBlock { FontSize = 11, Foreground = HexBrush("#8b949e") };
-
-            requestBtn.Click += async (s, ev) =>
-            {
-                requestBtn.IsEnabled = false;
-                statusBlockText.Text = "Onay talebi gönderiliyor...";
-                try
-                {
-                    using var client = new HttpClient { BaseAddress = new Uri("http://localhost:5080/") };
-                    var modeStr = targetMode == AuthorizationMode.FullAccess ? "R3" : "R2";
-                    var resp = await client.PostAsJsonAsync("admin/authorization/request-approval", new
-                    {
-                        machine_key = Environment.MachineName,
-                        requested_mode = modeStr,
-                        reason = "Desktop client yetki modu geçişi"
-                    });
-                    if (resp.IsSuccessStatusCode)
-                    {
-                        statusBlockText.Text = "Talep iletildi! Yönetici konsolundan onaylandıktan sonra PIN kodunu giriniz.";
-                        statusBlockText.Foreground = HexBrush("#3fb950");
-                    }
-                    else
-                    {
-                        statusBlockText.Text = "Talep iletilemedi (API çevrimdışı).";
-                        statusBlockText.Foreground = HexBrush("#f85149");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    statusBlockText.Text = "Hata: " + ex.Message;
-                    statusBlockText.Foreground = HexBrush("#f85149");
-                }
-                finally { requestBtn.IsEnabled = true; }
-            };
-
-            var pinPanel = new StackPanel
-            {
-                Spacing = 10,
-                Children =
-                {
-                    new TextBlock { Text = $"{targetMode} modu kritik güvenlik yetkileri içerir. 2. Onay (Dual Authorization) kapsamında yönetici panelinden üretilen onay kodunu (PIN) giriniz:", TextWrapping = TextWrapping.Wrap },
-                    pinBox,
-                    requestBtn,
-                    statusBlockText
-                }
-            };
-
-            var confirm = new ContentDialog
-            {
-                Title = $"2. Onay Gerekli ({targetMode})",
-                Content = pinPanel,
-                PrimaryButtonText = "Doğrula ve Geç",
-                CloseButtonText = "Vazgeç",
-                XamlRoot = Content.XamlRoot
-            };
-
-            if (await confirm.ShowAsync() != ContentDialogResult.Primary)
-            {
-                UpdateModeBadge(); // Revert back
-                return;
-            }
-
-            var enteredPin = pinBox.Text?.Trim() ?? "";
-            bool pinValid = false;
-
-            try
-            {
-                using var client = new HttpClient { BaseAddress = new Uri("http://localhost:5080/") };
-                var modeStr = targetMode == AuthorizationMode.FullAccess ? "R3" : "R2";
-                var resp = await client.PostAsJsonAsync("admin/authorization/validate-code", new
-                {
-                    machine_key = Environment.MachineName,
-                    mode = modeStr,
-                    code = enteredPin
-                });
-                if (resp.IsSuccessStatusCode)
-                {
-                    var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
-                    pinValid = json.TryGetProperty("valid", out var v) && v.GetBoolean();
-                }
-            }
-            catch { }
-
-            if (!pinValid)
-            {
-                var errDialog = new ContentDialog
-                {
-                    Title = "Geçersiz Onay Kodu",
-                    Content = new TextBlock { Text = "Girdiğiniz onay kodu doğrulanamadı veya süresi dolmuş. Yetki modu değiştirilmedi.", TextWrapping = TextWrapping.Wrap },
-                    CloseButtonText = "Tamam",
-                    XamlRoot = Content.XamlRoot
-                };
-                await errDialog.ShowAsync();
-                UpdateModeBadge(); // Revert back
-                return;
-            }
-        }
-
-        var old = _mode;
-        _mode = targetMode;
-        SaveMode();
-        UpdateModeBadge();
-        await AuditLogger.LogModeChangeAsync(_repoRoot, old.ToString(), _mode.ToString());
-    }
 
     private void PinBtn_Click(object sender, RoutedEventArgs e)
     {
@@ -747,21 +613,40 @@ public sealed partial class MainWindow : Window
     private string BuildBotResponse(List<FindingItem> findings, string? research)
     {
         var sb = new System.Text.StringBuilder();
-        if (findings.Count == 0) sb.AppendLine("Yerel taramada bu sorunla ilgili bulgu bulamadim.");
-        else
-        {
-            sb.AppendLine($"Yerel taramada {findings.Count} ilgili bulgu:");
-            foreach (var f in findings.Take(5)) sb.AppendLine($"- [{f.RiskLabel}] {f.Summary}");
-            if (findings.Count > 5) sb.AppendLine($"... ve {findings.Count - 5} bulgu daha. 'Coz' butonuyla tumunu gorup onarabilirsiniz.");
-            else sb.AppendLine("Onarim icin 'Coz' butonuna tiklayin.");
-        }
+
+        // 1. Eğer Google AI Studio (Gemini) yanıt verdiyse, doğrudan sohbet yanıtı olarak öne çıkar
         if (!string.IsNullOrWhiteSpace(research))
         {
-            sb.AppendLine();
-            sb.AppendLine("Web + AI arastirmasi:");
-            sb.AppendLine(research.Length > 800 ? research[..800] + "..." : research);
+            sb.AppendLine(research.Trim());
+
+            // Eğer sistemde yerel bulgular da tespit edildiyse sohbetin altına bilgi notu ekle
+            if (findings.Count > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine($"🔍 Tespit Edilen Sistem Bulguları ({findings.Count} adet):");
+                foreach (var f in findings.Take(3)) sb.AppendLine($"• [{f.RiskLabel}] {f.Summary}");
+                if (findings.Count > 3) sb.AppendLine($"• ...ve {findings.Count - 3} ek bulgu. (Onarmak için 'Çöz' butonunu kullanabilirsiniz.)");
+                else sb.AppendLine("Onarım adımını başlatmak için 'Çöz' butonuna tıklayabilirsiniz.");
+            }
         }
-        return sb.ToString();
+        else
+        {
+            // AI anahtarı yoksa veya offline ise standart yerel tarama mesajı
+            if (findings.Count == 0)
+            {
+                sb.AppendLine("Bu konuyla ilgili yerel sistem taramasında herhangi bir anormallik bulunamadı.");
+                sb.AppendLine("💡 İpucu: Admin panelinden Google AI Studio (Gemini) anahtarı eklendiğinde mesajlarınıza doğrudan yapay zeka yanıt verecektir.");
+            }
+            else
+            {
+                sb.AppendLine($"Yerel taramada {findings.Count} ilgili sistem bulgusu tespit edildi:");
+                foreach (var f in findings.Take(5)) sb.AppendLine($"- [{f.RiskLabel}] {f.Summary}");
+                if (findings.Count > 5) sb.AppendLine($"... ve {findings.Count - 5} bulgu daha. 'Çöz' butonuyla tümünü görüp onarabilirsiniz.");
+                else sb.AppendLine("Onarım için 'Çöz' butonuna tıklayın.");
+            }
+        }
+
+        return sb.ToString().TrimEnd();
     }
 
     private async Task<string?> ResearchAsync(string query)

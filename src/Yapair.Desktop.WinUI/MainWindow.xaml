@@ -39,14 +39,6 @@
       </StackPanel>
       <Border Grid.Column="1" Background="Transparent"/>
       <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,138,0" Spacing="4">
-        <ComboBox x:Name="ModeComboBox" SelectionChanged="ModeComboBox_SelectionChanged"
-                  Height="28" Padding="6,2" FontSize="11" Background="#21262d" Foreground="#c9d1d9"
-                  BorderBrush="#30363d" BorderThickness="1" ToolTipService.ToolTip="Yetki Modu (Varsayılan R0 - Salt Okunur)">
-          <ComboBoxItem Content="R0 - Salt Okunur" Tag="0" Foreground="#58a6ff"/>
-          <ComboBoxItem Content="R1 - Onaylı" Tag="1" Foreground="#d29922"/>
-          <ComboBoxItem Content="R2 - Otomatik" Tag="2" Foreground="#3fb950"/>
-          <ComboBoxItem Content="R3 - Uzman" Tag="3" Foreground="#f85149"/>
-        </ComboBox>
         <Button x:Name="PinBtn" Click="PinBtn_Click" Background="Transparent" BorderThickness="0"
                 Width="32" Height="30" Padding="0" ToolTipService.ToolTip="Pencereyi sabitle (Üstte tut)">
           <FontIcon x:Name="PinIcon" Glyph="&#xE718;" FontSize="11" Foreground="#8b949e"/>

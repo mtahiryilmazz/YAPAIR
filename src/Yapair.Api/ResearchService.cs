@@ -36,21 +36,18 @@ public sealed class ResearchService
         var results = await SearchDuckDuckGoAsync(query, 5, ct);
         var context = BuildContext(results);
         var prompt = $"""
-            Sen bir Windows destek uzmanısın. Kullanıcının sorununu ve web arama sonuçlarını kullanarak
-            kısa, uygulanabilir bir çözüm önerisi yaz. Türkçe yaz.
+            Sen YAPAIR akıllı Windows IT ve masaüstü asistanısın. Kullanıcı seninle bir sohbet/mesajlaşma arayüzü üzerinden yazışıyor.
+            Kullanıcının yazdığı mesajı ve gerekirse ilgili web/sistem arama sonuçlarını dikkate alarak doğrudan, samimi, profesyonel ve çözüm odaklı bir yanıt ver.
 
-            KULLANICI SORUNU: {query}
+            KULLANICI MESAJI: {query}
 
-            WEB ARAMA SONUÇLARI:
+            GÜNCEL BİLGİ/ARAMA KAYNAKLARI (Gerekirse referans al):
             {context}
 
-            Yanıt formatı:
-            ÖZET: (1-2 cümle)
-            ADIMLAR:
-            1. ...
-            2. ...
-            KOMUT: (varsa tek satır cmd/powershell, yoksa "yok")
-            RİSK: R0/R1/R2/R3
+            Kurallar:
+            - Kullanıcı selamlaşma veya sohbet amaçlı yazdıysa (örn: "merhaba", "nasılsın", "kimsin") doğrudan bir yapay zeka asistanı gibi sıcak ve yardımcı bir dille yanıt ver.
+            - Teknik veya sistem sorunu bildiriyorsa sorunu doğrudan açıkla ve adım adım pratik çözümünü yaz (varsa PowerShell/CMD komutu ver).
+            - Yanıtı robotik kalıplara (sadece Özet: Adım: gibi) sıkıştırma; doğal, akıcı ve bilgilendirici bir sohbet yanıtı olarak Türkçe yaz.
             """;
         var answer = await CallGeminiWithFallbackAsync(prompt, ct);
         return new ResearchResult(query, answer, results);
